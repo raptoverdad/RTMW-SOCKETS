@@ -1,0 +1,4 @@
+node_modules/
+/node_modules
+mysql-data-2
+database-config
