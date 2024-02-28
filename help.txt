@@ -34,3 +34,191 @@ getblockchaininfo: Proporciona información sobre el estado actual de la cadena 
 getblockcount: Obtiene el número de bloques en la cadena de bloques.
 getblockhash height: Obtiene el hash de un bloque en una altura específica.
 getblockstats hash_or_height: Obtiene estadísticas de un bloque específico.
+
+COMANDOS CON LOS QUE TRABAJAR PRIMERO PARA CREAR MI PROPIO SULLYNODE:
+Crear una nueva billetera: Si aún no tienes una billetera, puedes utilizar el comando createwallet para crear una nueva billetera.
+
+Obtener una dirección de recepción: Utiliza el comando getnewaddress para obtener una nueva dirección de recepción en tu billetera. Esta será la dirección a la que enviarás las monedas.
+
+Enviar monedas: Utiliza el comando sendtoaddress para enviar una cantidad específica de monedas a la dirección de recepción que obtuviste en el paso anterior.
+
+Verificar la transacción: Opcionalmente, puedes utilizar el comando gettransaction para obtener detalles sobre la transacción que acabas de realizar, como el estado y la confirmación.
+
+Realizar copias de seguridad: Es una buena práctica realizar copias de seguridad de tu billetera después de realizar transacciones importantes. Puedes utilizar el comando backupwallet para realizar una copia de seguridad de tu billetera en una ubicación segura.
+
+
+TODOS LOS COMANDOS:== Addressindex ==
+getaddressbalance
+getaddressdeltas
+getaddressmempool
+getaddresstxids
+getaddressutxos
+
+== Blockchain ==
+getbestblockhash
+getbestchainlock
+getblock "blockhash" ( verbosity )
+getblockchaininfo
+getblockcount
+getblockhash height
+getblockhashes timestamp
+getblockheader "hash" ( verbose )
+getblockheaders "hash" ( count verbose )
+getblockstats hash_or_height ( stats )
+getchaintips ( count branchlen )
+getchaintxstats ( nblocks blockhash )
+getdifficulty
+getmempoolancestors txid (verbose)
+getmempooldescendants txid (verbose)
+getmempoolentry txid
+getmempoolinfo
+getmerkleblocks "filter" "hash" ( count )
+getrawmempool ( verbose )
+getspecialtxes "blockhash" ( type count skip verbosity )
+getspentinfo
+gettxout "txid" n ( include_mempool )
+gettxoutproof ["txid",...] ( blockhash )
+gettxoutsetinfo
+preciousblock "blockhash"
+pruneblockchain
+savemempool
+verifychain ( checklevel nblocks )
+verifytxoutproof "proof"
+
+== Control ==
+debug "category"
+getmemoryinfo ("mode")
+help ( "command" "subcommand" )
+logging ( <include> <exclude> )
+stop
+uptime
+
+== Evo ==
+bls "command" ...
+protx "command" ...
+quorum "command" ...
+verifychainlock "blockHash" "signature" ( blockHeight )
+verifyislock "id" "txid" "signature" ( maxHeight )
+
+== Generating ==
+generate nblocks ( maxtries )
+generatetoaddress nblocks address (maxtries)
+setgenerate generate ( genproclimit )
+
+== Mining ==
+getblocktemplate ( TemplateRequest )
+getmininginfo
+getnetworkhashps ( nblocks height )
+prioritisetransaction <txid> <fee delta>
+submitblock "hexdata"  ( "dummy" )
+
+== Network ==
+addnode "node" "add|remove|onetry"
+clearbanned
+disconnectnode "[address]" [nodeid]
+getaddednodeinfo ( "node" )
+getconnectioncount
+getnettotals
+getnetworkinfo
+getpeerinfo
+listbanned
+ping
+setban "subnet" "add|remove" (bantime) (absolute)
+setnetworkactive true|false
+
+== Raptoreum ==
+coinjoin "command"
+getcoinjoininfo
+getgovernanceinfo
+getpoolinfo
+getsuperblockbudget index
+gobject "command" ...
+mnsync [status|next|reset]
+smartnode "command" ...
+smartnodelist ( "mode" "filter" )
+spork "command"
+voteraw <mn-collateral-tx-hash> <mn-collateral-tx-index> <governance-hash> <vote-signal> [yes|no|abstain] <time> <vote-sig>
+
+== Rawtransactions ==
+combinerawtransaction ["hexstring",...]
+createrawtransaction [{"txid":"id","vout":n},...] [{"address":amount},{"data":"hex"},...] ( locktime )
+decoderawtransaction "hexstring"
+decodescript "hexstring"
+fundrawtransaction "hexstring" ( options )
+getrawtransaction "txid" ( verbose "blockhash" )
+sendrawtransaction "hexstring" ( allowhighfees instantsend bypasslimits)
+signrawtransaction "hexstring" ( [{"txid":"id","vout":n,"scriptPubKey":"hex","redeemScript":"hex"},...] ["privatekey1",...] sighashtype )
+signrawtransactionwithkey "hexstring" ["privatekey1",...] ( [{"txid":"id","vout":n,"scriptPubKey":"hex","redeemScript":"hex"},...] sighashtype )
+
+== Util ==
+createmultisig nrequired ["key",...]
+estimatesmartfee conf_target ("estimate_mode")
+signmessagewithprivkey "privkey" "message"
+validateaddress "address"
+verifymessage "address" "signature" "message"
+
+== Wallet ==
+abandontransaction "txid"
+abortrescan
+addmultisigaddress nrequired ["key",...] ( "label" )
+backupwallet "destination"
+createwallet "wallet_name"
+dumphdinfo
+dumpprivkey "address"
+dumpwallet "filename"
+encryptwallet "passphrase"
+getaccount (Deprecated, will be removed in V0.18. To use this command, start raptoreumd with -deprecatedrpc=accounts)
+getaccountaddress (Deprecated, will be removed in V0.18. To use this command, start raptoreumd with -deprecatedrpc=accounts)
+getaddressbyaccount (Deprecated, will be removed in V0.18. To use this command, start raptoreumd with -deprecatedrpc=accounts)
+getaddressesbylabel "label"
+getaddressinfo "address"
+getbalance ( "(dummy)" minconf addlocked include_watchonly )
+getnewaddress ( "label" )
+getrawchangeaddress
+getreceivedbyaccount (Deprecated, will be removed in V0.18. To use this command, start raptoreumd with -deprecatedrpc=accounts)
+getreceivedbyaddress "address" ( minconf addlocked )
+gettransaction "txid" ( include_watchonly )
+getunconfirmedbalance
+getwalletinfo
+importaddress "address" ( "label" rescan p2sh )
+importelectrumwallet "filename" index
+importmulti "requests" ( "options" )
+importprivkey "privkey" ( "label" ) ( rescan )
+importprunedfunds
+importpubkey "pubkey" ( "label" rescan )
+importwallet "filename"
+keepass <genkey|init|setpassphrase>
+keypoolrefill ( newsize )
+listaccounts (Deprecated, will be removed in V0.18. To use this command, start raptoreumd with -deprecatedrpc=accounts)
+listaddressbalances ( minamount )
+listaddressgroupings
+listlabels ( "purpose" )
+listlockunspent
+listreceivedbyaccount (Deprecated, will be removed in V0.18. To use this command, start raptoreumd with -deprecatedrpc=accounts)
+listreceivedbyaddress ( minconf addlocked include_empty include_watchonly address_filter )
+listsinceblock ( "blockhash" target_confirmations include_watchonly include_removed )
+listtransactions (label count skip include_watchonly)
+listunspent ( minconf maxconf  ["addresses",...] [include_unsafe] [query_options])
+listwallets
+loadwallet "filename"
+lockunspent unlock ([{"txid":"txid","vout":n},...])
+move (Deprecated, will be removed in V0.18. To use this command, start raptoreumd with -deprecatedrpc=accounts)
+removeaddress "address"
+removeprunedfunds "txid"
+rescanblockchain ("start_height") ("stop_height")
+sendfrom (Deprecated, will be removed in V0.18. To use this command, start raptoreumd with -deprecatedrpc=accounts)
+sendmany "" {"address":amount,...} ( minconf addlocked "comment" ["address",...] subtractfeefrom use_is use_cj conf_target "estimate_mode")
+sendtoaddress "address" amount ( "comment" "comment_to" subtractfeefromamount use_is use_cj conf_target "estimate_mode")setaccount (Deprecated, will be removed in V0.18. To use this command, start raptoreumd with -deprecatedrpc=accounts)
+setcoinjoinamount amount
+setcoinjoinrounds rounds
+settxfee amount
+signmessage "address" "message"
+signrawtransactionwithwallet "hexstring" ( [{"txid":"id","vout":n,"scriptPubKey":"hex","redeemScript":"hex"},...] sighashtype )
+unloadwallet ( "wallet_name" )
+upgradetohd ( "mnemonic" "mnemonicpassphrase" "walletpassphrase" )
+walletlock
+walletpassphrase "passphrase" timeout ( mixingonly )
+walletpassphrasechange "oldpassphrase" "newpassphrase"
+
+== Zmq ==
+getzmqnotifications
