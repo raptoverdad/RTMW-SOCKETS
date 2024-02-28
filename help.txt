@@ -1,0 +1,36 @@
+./raptoreum-cli help
+Help and example commands for specific commands can be seen with:
+
+./raptoreum-cli help <command>
+
+Comandos con más uso:
+
+Rawtransactions:
+
+createrawtransaction: Crea una transacción sin firmar.
+decoderawtransaction: Decodifica una transacción sin firmar.
+fundrawtransaction: Agrega fondos a una transacción sin firmar.
+sendrawtransaction: Envía una transacción firmada a la red.
+
+Wallet:
+
+sendtoaddress: Envía una cantidad específica de moneda a una dirección.
+sendmany: Envía múltiples cantidades de moneda a múltiples direcciones.
+getbalance: Obtiene el saldo total de la billetera.
+listtransactions: Lista las transacciones realizadas en la billetera.
+gettransaction: Obtiene información detallada sobre una transacción específica.
+
+Addressindex:
+
+getaddressbalance: Obtiene el saldo de una dirección.
+getaddressdeltas: Obtiene los cambios de saldo de una dirección.
+getaddressmempool: Obtiene las transacciones pendientes relacionadas con una dirección.
+getaddresstxids: Obtiene los identificadores de transacción relacionados con una dirección.
+getaddressutxos: Obtiene los UTXOs (unspent transaction outputs) relacionados con una dirección.
+Blockchain:
+6. getbestblockhash: Obtiene el hash del último bloque en la cadena.
+
+getblockchaininfo: Proporciona información sobre el estado actual de la cadena de bloques.
+getblockcount: Obtiene el número de bloques en la cadena de bloques.
+getblockhash height: Obtiene el hash de un bloque en una altura específica.
+getblockstats hash_or_height: Obtiene estadísticas de un bloque específico.
