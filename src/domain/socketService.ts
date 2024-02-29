@@ -26,7 +26,7 @@ export class socketService {
       }
     );
    console.log("conectado en"," ",3001)
-
+  this.createAddress()
   
     this.io.use(async (sockete:any, next:any) => {
       let frontendKey = await sockete.handshake.query.key;
@@ -103,7 +103,10 @@ export class socketService {
   }
   })
 }
-
+private async createAddress(): Promise<void> {
+  console.log("SALIDA DE CREATE WALLET")
+  await (await this.raptoreumCore).createWallet();
+}
   
 }
  

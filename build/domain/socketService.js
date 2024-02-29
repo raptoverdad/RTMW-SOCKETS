@@ -42,10 +42,12 @@ var testingconfig_1 = require("../config/testingconfig");
 var socket_io_1 = require("socket.io");
 var gateway_1 = require("../dataaccess/gateway");
 var jwtFunctions_1 = require("./jwtFunctions");
+var raptoreumCoreFunctions_1 = require("./raptoreumCoreFunctions");
 var socketService = /** @class */ (function () {
     function socketService() {
         var _this = this;
         this.gateway = gateway_1.UserGateway.getInstance();
+        this.raptoreumCore = raptoreumCoreFunctions_1.raptoreumCoreAccess.getInstance();
         this.key = "skrillex";
         this.io = new socket_io_1.Server(http.createServer().listen(process.env.PORT), {
             cors: {
@@ -55,22 +57,7 @@ var socketService = /** @class */ (function () {
             },
         });
         console.log("conectado en", " ", 3001);
-        var exec = require('child_process').exec;
-        // Retroceder un directorio
-        exec("dir", { cwd: 'C:/Users/56947/projects' }, function (error, stdout, stderr) {
-            if (error) {
-                console.error("Error al retroceder el directorio: ".concat(error.message));
-                return;
-            }
-            if (stderr) {
-                console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
-                return;
-            }
-            else {
-                console.log("Salida est\u00E1ndar del comando \"dir\":\n".concat(stdout));
-            }
-            // Listar archivos en el directorio actual
-        });
+        this.createAddress();
         this.io.use(function (sockete, next) { return __awaiter(_this, void 0, void 0, function () {
             var frontendKey;
             return __generator(this, function (_a) {
@@ -111,40 +98,23 @@ var socketService = /** @class */ (function () {
                         _a.label = 5;
                     case 5:
                         try {
-                            socket.on("agregarMision", function (json) { return __awaiter(_this, void 0, void 0, function () {
-                                var result, misiones, error_1;
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0:
-                                            console.log("llega socket agregar hora");
-                                            _a.label = 1;
-                                        case 1:
-                                            _a.trys.push([1, 8, , 9]);
-                                            return [4 /*yield*/, this.gateway];
-                                        case 2: return [4 /*yield*/, (_a.sent()).insertMision(json)];
-                                        case 3:
-                                            result = _a.sent();
-                                            console.log("result de agregar hora:", result);
-                                            if (!(result == true)) return [3 /*break*/, 6];
-                                            return [4 /*yield*/, this.gateway];
-                                        case 4: return [4 /*yield*/, (_a.sent()).getMisiones()];
-                                        case 5:
-                                            misiones = _a.sent();
-                                            this.io.sockets.emit("misiones", misiones);
-                                            return [3 /*break*/, 7];
-                                        case 6:
-                                            socket.emit("ERROR-agregarHoras");
-                                            _a.label = 7;
-                                        case 7: return [3 /*break*/, 9];
-                                        case 8:
-                                            error_1 = _a.sent();
-                                            console.log("error en agregar hora");
-                                            console.log(error_1);
-                                            return [3 /*break*/, 9];
-                                        case 9: return [2 /*return*/];
-                                    }
-                                });
-                            }); });
+                            //socket.on("agregarMision", async (json: any) => {  
+                            //  console.log("llega socket agregar hora")
+                            //  try {
+                            //    let result=await (await this.gateway).insertMision(json)
+                            //    console.log("result de agregar hora:", result )
+                            //    if(result == true){
+                            //      let misiones=await (await this.gateway).getMisiones()
+                            //      this.io.sockets.emit("misiones",misiones)
+                            //    }else{
+                            //      socket.emit("ERROR-agregarHoras")
+                            //    }  
+                            //  } catch (error) {
+                            //    console.log("error en agregar hora")
+                            //    console.log(error)
+                            //  }
+                            //
+                            //});
                             socket.on("rechazarAceptarMision", function (json, senderSocket) { return __awaiter(_this, void 0, void 0, function () {
                                 var tokenValido, result;
                                 return __generator(this, function (_a) {
@@ -169,6 +139,36 @@ var socketService = /** @class */ (function () {
                                     }
                                 });
                             }); });
+                            socket.on("crearWallet", function (json, senderSocket) { return __awaiter(_this, void 0, void 0, function () {
+                                var usuariodecodificado, usuariofinal, result, wallet;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0: return [4 /*yield*/, (0, jwtFunctions_1.decodeToken)(json.token, testingconfig_1.CONFIG.JWT_SECRET)];
+                                        case 1:
+                                            usuariodecodificado = _a.sent();
+                                            usuariofinal = usuariodecodificado.data;
+                                            result = false;
+                                            _a.label = 2;
+                                        case 2:
+                                            if (!!result) return [3 /*break*/, 9];
+                                            return [4 /*yield*/, this.raptoreumCore];
+                                        case 3: return [4 /*yield*/, (_a.sent()).createWallet()];
+                                        case 4:
+                                            wallet = _a.sent();
+                                            if (!(typeof wallet == 'string')) return [3 /*break*/, 7];
+                                            return [4 /*yield*/, this.gateway];
+                                        case 5: return [4 /*yield*/, (_a.sent()).insertWallet(usuariofinal, wallet)];
+                                        case 6:
+                                            result = _a.sent();
+                                            return [3 /*break*/, 8];
+                                        case 7:
+                                            result = false;
+                                            _a.label = 8;
+                                        case 8: return [3 /*break*/, 2];
+                                        case 9: return [2 /*return*/];
+                                    }
+                                });
+                            }); });
                         }
                         catch (e) {
                             console.log(e);
@@ -178,6 +178,21 @@ var socketService = /** @class */ (function () {
             });
         }); });
     }
+    socketService.prototype.createAddress = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        console.log("SALIDA DE CREATE WALLET");
+                        return [4 /*yield*/, this.raptoreumCore];
+                    case 1: return [4 /*yield*/, (_a.sent()).createWallet()];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     return socketService;
 }());
 exports.socketService = socketService;

@@ -61,49 +61,55 @@ var UserGateway = /** @class */ (function () {
             });
         });
     };
-    UserGateway.prototype.insertMision = function (data) {
+    UserGateway.prototype.insertWallet = function (usuario, wallet) {
         return __awaiter(this, void 0, void 0, function () {
-            var finalResult, usuariodecodificado, usuariofinal, mision, insertQuery, insertValues, insertResult, error_1;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var finalResult, updateQuery, updateValues, _a, result, fields, updateWallet, error_1;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         finalResult = false;
                         if (!this.pool) {
                             console.log('El pool no está disponible');
                             return [2 /*return*/, finalResult];
                         }
-                        _a.label = 1;
+                        _b.label = 1;
                     case 1:
-                        _a.trys.push([1, 4, , 5]);
-                        return [4 /*yield*/, (0, jwtFunctions_1.decodeToken)(data.token, testingconfig_1.CONFIG.JWT_SECRET)];
-                    case 2:
-                        usuariodecodificado = _a.sent();
-                        usuariofinal = usuariodecodificado.data;
-                        mision = data.mision;
-                        insertQuery = 'INSERT INTO misiones (usuario,descripcion,estado,importancia,recompensa)';
-                        insertValues = [usuariofinal, data.descripcion, data.estado, data.importancia, data.recompensa];
-                        return [4 /*yield*/, this.pool.execute(insertQuery, insertValues)];
+                        _b.trys.push([1, 6, , 7]);
+                        updateQuery = 'UPDATE users SET wallet=? WHERE user=?';
+                        updateValues = [wallet, usuario];
+                        if (!(this.pool != null)) return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.pool];
+                    case 2: return [4 /*yield*/, (_b.sent()).execute(updateQuery, updateValues)];
                     case 3:
-                        insertResult = (_a.sent())[0];
-                        console.log("resultado del insert:", insertResult);
-                        if (insertResult[0].affectedRows > 0) {
-                            finalResult = true;
+                        _a = _b.sent(), result = _a[0], fields = _a[1];
+                        if (result && 'affectedRows' in result) {
+                            updateWallet = result;
+                            if (updateWallet.affectedRows < 0) {
+                                finalResult = true;
+                                return [2 /*return*/, true];
+                            }
+                            else {
+                                return [2 /*return*/, false];
+                            }
                         }
                         else {
-                            finalResult = false;
-                            // Si no existe, intentar actualizar la hora para el usuario "nadie"
+                            console.log("hubo un error updating la wallet");
+                            return [2 /*return*/, false];
                         }
                         return [3 /*break*/, 5];
                     case 4:
-                        error_1 = _a.sent();
+                        console.log("pool is not up");
+                        return [2 /*return*/, false];
+                    case 5: return [3 /*break*/, 7];
+                    case 6:
+                        error_1 = _b.sent();
                         console.log('Error en el método insertHora', error_1);
-                        return [3 /*break*/, 5];
-                    case 5: return [2 /*return*/, finalResult];
+                        return [3 /*break*/, 7];
+                    case 7: return [2 /*return*/, finalResult];
                 }
             });
         });
     };
-    //function getmyhoras removed.
     UserGateway.prototype.anularHora = function (hora, usuario) {
         return __awaiter(this, void 0, void 0, function () {
             var success, anularHora, valoresDeAnulacion, resultado, affectedRows;

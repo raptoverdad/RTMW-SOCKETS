@@ -5,6 +5,11 @@ Help and example commands for specific commands can be seen with:
 comandos que más uso:
 start -NoNewWindow raptoreumd.exe
 
+AYUDA COMANDOS CON PROBLEMAS:
+the cmd createwallet "wallet_name" auto load the newly created wallet, you only need to use loadwallet if you restart the raptoreumd.
+wen you have more that 1 wallet loaded you need to specify witch wallet should run the cmd example ./raptoreum-cli -rpcwallet=testwallet getwalletinfo note the default wallet is at -rpcwallet=""
+to see the loaded wallets run the cmd listwallets
+
 Comandos que probablemente usaré:
 
 Rawtransactions:
