@@ -8,7 +8,7 @@ import { raptoreumCoreAccess} from './raptoreumCoreFunctions'
 
 export class socketService {
   private gateway= UserGateway.getInstance()
-  private raptoreumCoreAccess=raptoreumCoreAccess.getInstance()
+  private raptoreumCore=raptoreumCoreAccess.getInstance()
   private io: Server;
   private key:string;
   private usersConected:any;
@@ -50,23 +50,23 @@ export class socketService {
        socket.emit('personas')
       }
   try {
-  socket.on("agregarMision", async (json: any) => {  
-    console.log("llega socket agregar hora")
-    try {
-      let result=await (await this.gateway).insertMision(json)
-      console.log("result de agregar hora:", result )
-      if(result == true){
-        let misiones=await (await this.gateway).getMisiones()
-        this.io.sockets.emit("misiones",misiones)
-      }else{
-        socket.emit("ERROR-agregarHoras")
-      }  
-    } catch (error) {
-      console.log("error en agregar hora")
-      console.log(error)
-    }
-  
-  });
+  //socket.on("agregarMision", async (json: any) => {  
+  //  console.log("llega socket agregar hora")
+  //  try {
+  //    let result=await (await this.gateway).insertMision(json)
+  //    console.log("result de agregar hora:", result )
+  //    if(result == true){
+  //      let misiones=await (await this.gateway).getMisiones()
+  //      this.io.sockets.emit("misiones",misiones)
+  //    }else{
+  //      socket.emit("ERROR-agregarHoras")
+  //    }  
+  //  } catch (error) {
+  //    console.log("error en agregar hora")
+  //    console.log(error)
+  //  }
+  //
+  //});
   socket.on("rechazarAceptarMision", async (json: any, senderSocket:any) => {
     //falta verificacion del json  
     let tokenValido=await decodeToken(json.token,CONFIG.JWT_SECRET)
@@ -86,9 +86,16 @@ export class socketService {
   socket.on("crearWallet", async (json: any, senderSocket:any) => {
     const usuariodecodificado = await decodeToken(json.token, CONFIG.JWT_SECRET);
     const usuariofinal = usuariodecodificado.data;
-    let wallet=await (await raptoreumCoreAccess).createWallet()
-    this.gateway.insertWallet(usuariofinal)
-    
+    let result = false;
+    while (!result) {
+        let wallet= await (await this.raptoreumCore).createWallet();
+        if(typeof wallet =='string'){
+          result = await (await this.gateway).insertWallet(usuariofinal, wallet);
+        }else{
+          result=false
+        }
+        //insertWallet func returns true or false
+    }
   });
 
   }catch(e){

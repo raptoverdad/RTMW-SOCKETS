@@ -10,7 +10,7 @@ export class raptoreumCoreAccess {
       }
       return raptoreumCoreAccess.instance;
     }
-    getAccountBalance(account:any){
+    public async getAccountBalance(account:any){
         // Retroceder un directorio
     let  raptoreumAddress=account
     exec(`dir`, {cwd: 'C:/Users/56947/projects'}, (error:any, stdout:any, stderr:any) => {
@@ -29,28 +29,28 @@ export class raptoreumCoreAccess {
    
   });
     }
-    createWallet(client:string){
-
-        let address
-        exec(`dir`, {cwd: 'C:/Users/56947/projects'}, (error:any, stdout:any, stderr:any) => {
+    public async createWallet(): Promise<boolean | string> {
+      let result
+        exec(`./raptoreum-cli getnewaddress`, {cwd: 'C:/Users/56947/Desktop/raptoreum-win-1.3.17.05'}, (error:any, stdout:string, stderr:any) => {
             if (error) {
               console.error(`Error al retroceder el directorio: ${error.message}`);
-              return;
+              return false;
             }
             if (stderr) {
               console.error(`Error en la salida estándar: ${stderr}`);
-              return;
+              return false;
             }else{
-               console.log(`Salida estándar del comando "dir":\n${stdout}`);
+               result= stdout
             }       
             // Listar archivos en el directorio actual   
           });
-          
-        return address
+          if (typeof result == 'string'){
+            return result
+          }else{
+            return false
+          }
     }
-    sendRaptoreum(to){
-
-    }
+   
 
     
 }

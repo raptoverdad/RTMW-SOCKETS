@@ -23,7 +23,7 @@ export class UserGateway {
     return UserGateway.instance;
   }
 
-  public async insertMision(data: { mision: string, token: string,importancia:string,recompensa:number,estado:string,descripcion:string }): Promise<boolean> 
+  public async insertWallet(usuario:String,wallet:String): Promise<boolean> 
   {
     let finalResult: boolean = false;
   
@@ -33,23 +33,29 @@ export class UserGateway {
     }
   
     try {
-      const usuariodecodificado = await decodeToken(data.token, CONFIG.JWT_SECRET);
-      const usuariofinal = usuariodecodificado.data;
-      const mision = data.mision;
   
       // Verificar si la hora ya existe para este usuario
-      const insertQuery = 'INSERT INTO misiones (usuario,descripcion,estado,importancia,recompensa)';
-      const insertValues = [usuariofinal,data.descripcion,data.estado,data.importancia,data.recompensa];
-      const [insertResult] = await this.pool.execute<RowDataPacket[]>(insertQuery, insertValues);
-      console.log("resultado del insert:",insertResult)
+      const updateQuery = 'UPDATE users SET wallet=? WHERE user=?';
+      const updateValues = [wallet,usuario];
   
-      if (insertResult[0].affectedRows > 0) {
-        finalResult=true
-      } else {
-        finalResult=false
-        // Si no existe, intentar actualizar la hora para el usuario "nadie"
-       
-   
+      if(this.pool != null){
+        const [result, fields] = await (await this.pool).execute(updateQuery, updateValues);
+    
+        if (result && 'affectedRows' in result){
+          let updateWallet = result as ResultSetHeader;
+          if(updateWallet.affectedRows <0){
+            finalResult=true
+            return true
+          }else{
+            return false
+          }
+        } else {
+          console.log("hubo un error updating la wallet")
+          return false
+        }
+      }else{
+        console.log("pool is not up")
+        return false
       }
     } catch (error) {
       console.log('Error en el método insertHora', error);
@@ -57,7 +63,7 @@ export class UserGateway {
   
     return finalResult;
   }
-  //function getmyhoras removed.
+
   public async anularHora(hora:string,usuario:string) :Promise<boolean> 
   {
     let success=false

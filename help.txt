@@ -2,8 +2,10 @@
 Help and example commands for specific commands can be seen with:
 
 ./raptoreum-cli help <command>
+comandos que más uso:
+start -NoNewWindow raptoreumd.exe
 
-Comandos con más uso:
+Comandos que probablemente usaré:
 
 Rawtransactions:
 
