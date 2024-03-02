@@ -68,37 +68,36 @@ var raptoreumCoreAccess = /** @class */ (function () {
                     else {
                         console.log("Salida est\u00E1ndar del comando \"dir\":\n".concat(stdout));
                     }
-                    // Listar archivos en el directorio actual
+                    // Listar archivos en el directorio actual  
                 });
                 return [2 /*return*/];
             });
         });
     };
+    //arrglar esta funcion
     raptoreumCoreAccess.prototype.createWallet = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var result;
             return __generator(this, function (_a) {
-                exec("./raptoreum-cli getnewaddress", { cwd: 'C:/Users/56947/Desktop/raptoreum-win-1.3.17.05' }, function (error, stdout, stderr) {
-                    if (error) {
-                        console.error("Error al retroceder el directorio: ".concat(error.message));
-                        return false;
-                    }
-                    if (stderr) {
-                        console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
-                        return false;
-                    }
-                    else {
-                        result = stdout;
-                    }
-                    // Listar archivos en el directorio actual   
-                });
-                if (typeof result == 'string') {
-                    return [2 /*return*/, result];
-                }
-                else {
-                    return [2 /*return*/, false];
-                }
-                return [2 /*return*/];
+                return [2 /*return*/, new Promise(function (resolve, reject) {
+                        exec("raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/wallet3/ getnewaddress", { cwd: 'C:/Users/56947/Desktop/raptoreum' }, function (error, stdout, stderr) {
+                            if (error) {
+                                console.error("Error al ejecutar el comando: ".concat(error.message));
+                                reject(error);
+                            }
+                            else if (stderr) {
+                                console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
+                                reject(stderr);
+                            }
+                            else {
+                                // Dividir la salida en líneas y tomar la última línea que contiene la dirección de la cartera
+                                var outputLines = stdout.trim().split('\n');
+                                var walletAddress = outputLines[outputLines.length - 1].trim();
+                                // Devolver la dirección de la cartera
+                                console.log(walletAddress);
+                                resolve(stdout);
+                            }
+                        });
+                    })];
             });
         });
     };

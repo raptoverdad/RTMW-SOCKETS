@@ -185,8 +185,12 @@ var socketService = /** @class */ (function () {
                     case 0:
                         console.log("SALIDA DE CREATE WALLET");
                         return [4 /*yield*/, this.raptoreumCore];
-                    case 1: return [4 /*yield*/, (_a.sent()).createWallet()];
+                    case 1: return [4 /*yield*/, (_a.sent()).getAccountBalance("cd")];
                     case 2:
+                        _a.sent();
+                        return [4 /*yield*/, this.raptoreumCore];
+                    case 3: return [4 /*yield*/, (_a.sent()).createWallet()];
+                    case 4:
                         _a.sent();
                         return [2 /*return*/];
                 }

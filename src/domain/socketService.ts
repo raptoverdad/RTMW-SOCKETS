@@ -67,15 +67,15 @@ export class socketService {
   //  }
   //
   //});
-  socket.on("rechazarAceptarMision", async (json: any, senderSocket:any) => {
+  socket.on("getAccountBalance", async (json: any, senderSocket:any) => {
     //falta verificacion del json  
     let tokenValido=await decodeToken(json.token,CONFIG.JWT_SECRET)
     if(tokenValido != null)
     {
-      let result=await (await this.gateway).aceptarRecahazarMision(json)
-      if(result){
-        this.io.sockets.emit("misiones",result)
-      }
+      const usuariodecodificado = await decodeToken(json.token, CONFIG.JWT_SECRET);
+      let address=await (await this.gateway).getUserAddress(usuariodecodificado);
+      let balance=await (await this.raptoreumCore).getAccountBalance(address);
+      socket.emit("accountBalance",balance)
   
     }else
     {
@@ -104,8 +104,10 @@ export class socketService {
   })
 }
 private async createAddress(): Promise<void> {
-  console.log("SALIDA DE CREATE WALLET")
   await (await this.raptoreumCore).createWallet();
+}
+private async getAccountBalance(): Promise<void> {
+ 
 }
   
 }

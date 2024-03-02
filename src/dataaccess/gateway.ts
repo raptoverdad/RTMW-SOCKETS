@@ -83,7 +83,7 @@ export class UserGateway {
     }
     return success
   }
-  public async getMisiones(): Promise<any[]  | string> 
+  public async getUserAddress(): Promise<any[]  | string> 
   {
     let getVotesQuery="SELECT * FROM misiones"
 

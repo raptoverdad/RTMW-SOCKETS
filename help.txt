@@ -4,6 +4,8 @@ Help and example commands for specific commands can be seen with:
 ./raptoreum-cli help <command>
 comandos que más uso:
 start -NoNewWindow raptoreumd.exe
+raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/wallet3/ getnewaddress
+raptoreum-cli  loadwallet C:/Users/56947/AppData/Roaming/RaptoreumCore/wallet3/
 
 AYUDA COMANDOS CON PROBLEMAS:
 the cmd createwallet "wallet_name" auto load the newly created wallet, you only need to use loadwallet if you restart the raptoreumd.
@@ -250,3 +252,9 @@ Result:
 Examples:
 > raptoreum-cli loadwallet "test.dat"
 > curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "loadwallet", "params": ["test.dat"] }' -H 'content-type: text/plain;' http://127.0.0.1:10225/
+
+
+CHILD PROCESS:
+https://nodejs.org/api/child_process.html#child_processexeccommand-options-callback
+
+If a callback function is provided, it is called with the arguments (error, stdout, stderr). On success, error will be null. On error, error will be an instance of Error. The error.code property will be the exit code of the process. By convention, any exit code other than 0 indicates an error. error.signal will be the signal that terminated the process.

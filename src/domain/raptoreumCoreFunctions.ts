@@ -24,31 +24,29 @@ export class raptoreumCoreAccess {
     }else{
        console.log(`Salida estándar del comando "dir":\n${stdout}`);
     }
-   
-    // Listar archivos en el directorio actual
-   
+    // Listar archivos en el directorio actual  
   });
     }
-    public async createWallet(): Promise<boolean | string> {
-      let result
-        exec(`./raptoreum-cli getnewaddress`, {cwd: 'C:/Users/56947/Desktop/raptoreum-win-1.3.17.05'}, (error:any, stdout:string, stderr:any) => {
-            if (error) {
-              console.error(`Error al retroceder el directorio: ${error.message}`);
-              return false;
-            }
-            if (stderr) {
-              console.error(`Error en la salida estándar: ${stderr}`);
-              return false;
-            }else{
-               result= stdout
-            }       
-            // Listar archivos en el directorio actual   
-          });
-          if (typeof result == 'string'){
-            return result
-          }else{
-            return false
+    //arrglar esta funcion
+    public async createWallet(): Promise<string | null> {
+      return new Promise((resolve, reject) => {
+        exec(`raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/wallet3/ getnewaddress`, { cwd: 'C:/Users/56947/Desktop/raptoreum' }, (error: any, stdout: any, stderr: any) => {
+          if (error) {
+            console.error(`Error al ejecutar el comando: ${error.message}`);
+            reject(error);
+          } else if (stderr) {
+            console.error(`Error en la salida estándar: ${stderr}`);
+            reject(stderr);
+          } else {
+            // Dividir la salida en líneas y tomar la última línea que contiene la dirección de la cartera
+            const outputLines = stdout.trim().split('\n');
+            const walletAddress = outputLines[outputLines.length - 1].trim();
+            // Devolver la dirección de la cartera
+            console.log(walletAddress)
+            resolve(walletAddress);
           }
+        });
+      });
     }
    
 
