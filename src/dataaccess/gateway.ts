@@ -83,34 +83,30 @@ export class UserGateway {
     }
     return success
   }
-  public async getUserAddress(): Promise<any[]  | string> 
+  public async getUserAddress(user:string): Promise<string> 
   {
-    let getVotesQuery="SELECT * FROM misiones"
+    const getAddressQuery="SELECT address FROM users WHERE user=? "
 
     if (!this.pool) {
       throw new Error('No se pudo conectar a la base de datos');
     }else{
-      let [result] = await this.pool.execute<RowDataPacket[]>(getVotesQuery);
+
+      let [result] = await this.pool.execute<RowDataPacket[]>(getAddressQuery,[user]);
 
       if(Array.isArray(result))
-      {
-    
+      {   
         if(result.length == 0 || result==undefined)
         {
-          return "no misiones"
+          return "no address"
         }else if(result.length > 0)
         {
-          let newArray:any=[]
-          result.forEach(i=>{
-            newArray.push(i)
-          })
-          return newArray
+          return result[0].address
         }else{
-          return "no misiones"
+          throw new Error("UNEXPECTED RESULT")
         }
 
       }else{
-        return "no misiones"
+        return "no address"
       }
     }
   } 

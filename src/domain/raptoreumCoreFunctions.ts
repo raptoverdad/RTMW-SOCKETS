@@ -10,23 +10,26 @@ export class raptoreumCoreAccess {
       }
       return raptoreumCoreAccess.instance;
     }
-    public async getAccountBalance(account:any){
+    public async getAccountBalance(address:any): Promise<string | null>{
+      return new Promise((resolve, reject) => {
         // Retroceder un directorio
-    let  raptoreumAddress=account
-    exec(`dir`, {cwd: 'C:/Users/56947/projects'}, (error:any, stdout:any, stderr:any) => {
-    if (error) {
-      console.error(`Error al retroceder el directorio: ${error.message}`);
-      return;
-    }
-    if (stderr) {
-      console.error(`Error en la salida estándar: ${stderr}`);
-      return;
-    }else{
-       console.log(`Salida estándar del comando "dir":\n${stdout}`);
+        exec(`raptoreum-cli getbalance ${address}`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
+        if (error) {
+          console.error(`Error al retroceder el directorio: ${error.message}`);
+          reject(error);
+        }
+        if (stderr) {
+          console.error(`Error en la salida estándar: ${stderr}`);
+          reject(new Error(stderr));
+        }else{
+          console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
+          const outputLines = stdout.trim().split('\n');
+          const addressBalance = outputLines[outputLines.length - 1].trim();
+          resolve(addressBalance)
     }
     // Listar archivos en el directorio actual  
   });
-    }
+}) }
     //arrglar esta funcion
     public async createWallet(): Promise<string | null> {
       return new Promise((resolve, reject) => {
@@ -42,7 +45,7 @@ export class raptoreumCoreAccess {
             const outputLines = stdout.trim().split('\n');
             const walletAddress = outputLines[outputLines.length - 1].trim();
             // Devolver la dirección de la cartera
-            console.log(walletAddress)
+            console.log("create wallet address",walletAddress)
             resolve(walletAddress);
           }
         });

@@ -38,17 +38,20 @@ export class socketService {
     });
 
     this.io.on("connection", async(socket:any) => {
-      let materia:string=await socket.handshake.query.materia
-      if(materia =='misiones')
+      let subject:string=await socket.handshake.query.object.subject
+      let user:string=await socket.handshake.query.object.token
+      let tokenValido=await decodeToken(user,CONFIG.JWT_SECRET)
+      if(tokenValido != null)
       {
-      let misiones=await (await this.gateway).getMisiones()
-       socket.emit("misiones",misiones)    
-      }
-      else if(materia=="personas")
-      {  
-       //funcion que devuelve misiones
-       socket.emit('personas')
-      }
+        let usuariofinal = tokenValido.data;
+        if(subject =='balance')
+        {      
+          let address=await (await this.gateway).getUserAddress(usuariofinal)
+          let balance= await (await this.raptoreumCore).getAccountBalance(address)
+          socket.emit("balance",{balance:balance,address:address})    
+        }
+      }    
+
   try {
   //socket.on("agregarMision", async (json: any) => {  
   //  console.log("llega socket agregar hora")
@@ -67,34 +70,23 @@ export class socketService {
   //  }
   //
   //});
-  socket.on("getAccountBalance", async (json: any, senderSocket:any) => {
-    //falta verificacion del json  
-    let tokenValido=await decodeToken(json.token,CONFIG.JWT_SECRET)
-    if(tokenValido != null)
-    {
-      const usuariodecodificado = await decodeToken(json.token, CONFIG.JWT_SECRET);
-      let address=await (await this.gateway).getUserAddress(usuariodecodificado);
-      let balance=await (await this.raptoreumCore).getAccountBalance(address);
-      socket.emit("accountBalance",balance)
-  
-    }else
-    {
-      socket.emit("notValidToken")
-      console.log("emmiting not valid token")
-    }
+  socket.on("getUserInfo", async (json: any, senderSocket:any) => {
+    this.getUserInfo(json.token)
+
   });
-  socket.on("crearWallet", async (json: any, senderSocket:any) => {
+  socket.on("crearWallet", async (json: any) => {
     const usuariodecodificado = await decodeToken(json.token, CONFIG.JWT_SECRET);
     const usuariofinal = usuariodecodificado.data;
     let result = false;
     while (!result) {
         let wallet= await (await this.raptoreumCore).createWallet();
         if(typeof wallet =='string'){
+           //insertWallet func returns true or false
           result = await (await this.gateway).insertWallet(usuariofinal, wallet);
         }else{
           result=false
         }
-        //insertWallet func returns true or false
+       
     }
   });
 
@@ -106,8 +98,29 @@ export class socketService {
 private async createAddress(): Promise<void> {
   await (await this.raptoreumCore).createWallet();
 }
-private async getAccountBalance(): Promise<void> {
- 
+private async getUserInfo(token:string): Promise<{balance:string,address:string} | Error> {
+
+  let tokenValido= decodeToken(token,CONFIG.JWT_SECRET)
+  if(tokenValido != null)
+  {
+    const usuarioFinal = tokenValido.data;
+    try {
+      let address=await (await this.gateway).getUserAddress(usuarioFinal);
+      let balance=await (await this.raptoreumCore).getAccountBalance(address);
+      if(balance!=null){
+        return{balance,address}
+      }else{
+        return new Error("error trying to get account balance")
+      }   
+    } catch (error) {
+      return new Error("error trying to get account balance")
+    }
+   
+  }else
+  {
+    return new Error("not valid token")
+  }
+
 }
   
 }
