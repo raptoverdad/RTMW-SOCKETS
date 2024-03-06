@@ -49,15 +49,14 @@ var socketService = /** @class */ (function () {
         this.gateway = gateway_1.UserGateway.getInstance();
         this.raptoreumCore = raptoreumCoreFunctions_1.raptoreumCoreAccess.getInstance();
         this.key = "skrillex";
-        this.io = new socket_io_1.Server(http.createServer().listen(process.env.PORT), {
+        this.io = new socket_io_1.Server(http.createServer().listen(4000), {
             cors: {
                 origin: "*",
                 methods: ["GET", "POST"],
                 credentials: false,
             },
         });
-        console.log("conectado en", " ", 3001);
-        this.createAddress();
+        console.log("conectado en", " ", 4000);
         this.io.use(function (sockete, next) { return __awaiter(_this, void 0, void 0, function () {
             var frontendKey;
             return __generator(this, function (_a) {
@@ -76,27 +75,25 @@ var socketService = /** @class */ (function () {
             });
         }); });
         this.io.on("connection", function (socket) { return __awaiter(_this, void 0, void 0, function () {
-            var materia, misiones;
+            var object, subject, user, result;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, socket.handshake.query.materia];
+                    case 0:
+                        console.log("new connection");
+                        console.log("object connection:", socket.handshake.query.object);
+                        object = JSON.parse(socket.handshake.query.object);
+                        subject = object.subject;
+                        user = object.token;
+                        if (!(subject == 'balance')) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.getUserInfo(user)];
                     case 1:
-                        materia = _a.sent();
-                        if (!(materia == 'misiones')) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this.gateway];
-                    case 2: return [4 /*yield*/, (_a.sent()).getMisiones()];
-                    case 3:
-                        misiones = _a.sent();
-                        socket.emit("misiones", misiones);
-                        return [3 /*break*/, 5];
-                    case 4:
-                        if (materia == "personas") {
-                            //funcion que devuelve misiones
-                            socket.emit('personas');
+                        result = _a.sent();
+                        if (result !== false) {
+                            socket.emit("balance", result);
                         }
-                        _a.label = 5;
-                    case 5:
+                        _a.label = 2;
+                    case 2:
                         try {
                             //socket.on("agregarMision", async (json: any) => {  
                             //  console.log("llega socket agregar hora")
@@ -115,57 +112,17 @@ var socketService = /** @class */ (function () {
                             //  }
                             //
                             //});
-                            socket.on("rechazarAceptarMision", function (json, senderSocket) { return __awaiter(_this, void 0, void 0, function () {
-                                var tokenValido, result;
+                            socket.on("getBalance", function (json, senderSocket) { return __awaiter(_this, void 0, void 0, function () {
+                                var result;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
-                                        case 0: return [4 /*yield*/, (0, jwtFunctions_1.decodeToken)(json.token, testingconfig_1.CONFIG.JWT_SECRET)];
+                                        case 0: return [4 /*yield*/, this.getUserInfo(json.token)];
                                         case 1:
-                                            tokenValido = _a.sent();
-                                            if (!(tokenValido != null)) return [3 /*break*/, 4];
-                                            return [4 /*yield*/, this.gateway];
-                                        case 2: return [4 /*yield*/, (_a.sent()).aceptarRecahazarMision(json)];
-                                        case 3:
                                             result = _a.sent();
-                                            if (result) {
-                                                this.io.sockets.emit("misiones", result);
+                                            if (result !== false) {
+                                                socket.emit("balance", result);
                                             }
-                                            return [3 /*break*/, 5];
-                                        case 4:
-                                            socket.emit("notValidToken");
-                                            console.log("emmiting not valid token");
-                                            _a.label = 5;
-                                        case 5: return [2 /*return*/];
-                                    }
-                                });
-                            }); });
-                            socket.on("crearWallet", function (json, senderSocket) { return __awaiter(_this, void 0, void 0, function () {
-                                var usuariodecodificado, usuariofinal, result, wallet;
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0: return [4 /*yield*/, (0, jwtFunctions_1.decodeToken)(json.token, testingconfig_1.CONFIG.JWT_SECRET)];
-                                        case 1:
-                                            usuariodecodificado = _a.sent();
-                                            usuariofinal = usuariodecodificado.data;
-                                            result = false;
-                                            _a.label = 2;
-                                        case 2:
-                                            if (!!result) return [3 /*break*/, 9];
-                                            return [4 /*yield*/, this.raptoreumCore];
-                                        case 3: return [4 /*yield*/, (_a.sent()).createWallet()];
-                                        case 4:
-                                            wallet = _a.sent();
-                                            if (!(typeof wallet == 'string')) return [3 /*break*/, 7];
-                                            return [4 /*yield*/, this.gateway];
-                                        case 5: return [4 /*yield*/, (_a.sent()).insertWallet(usuariofinal, wallet)];
-                                        case 6:
-                                            result = _a.sent();
-                                            return [3 /*break*/, 8];
-                                        case 7:
-                                            result = false;
-                                            _a.label = 8;
-                                        case 8: return [3 /*break*/, 2];
-                                        case 9: return [2 /*return*/];
+                                            return [2 /*return*/];
                                     }
                                 });
                             }); });
@@ -178,21 +135,33 @@ var socketService = /** @class */ (function () {
             });
         }); });
     }
-    socketService.prototype.createAddress = function () {
+    socketService.prototype.getUserInfo = function (token) {
         return __awaiter(this, void 0, void 0, function () {
+            var tokenValido, usuariofinal, address, balance;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        console.log("SALIDA DE CREATE WALLET");
-                        return [4 /*yield*/, this.raptoreumCore];
-                    case 1: return [4 /*yield*/, (_a.sent()).getAccountBalance("cd")];
-                    case 2:
-                        _a.sent();
-                        return [4 /*yield*/, this.raptoreumCore];
-                    case 3: return [4 /*yield*/, (_a.sent()).createWallet()];
+                    case 0: return [4 /*yield*/, (0, jwtFunctions_1.decodeToken)(token, testingconfig_1.CONFIG.JWT_SECRET)];
+                    case 1:
+                        tokenValido = _a.sent();
+                        if (!(tokenValido != null)) return [3 /*break*/, 8];
+                        usuariofinal = tokenValido.data;
+                        return [4 /*yield*/, this.gateway];
+                    case 2: return [4 /*yield*/, (_a.sent()).getUserAddress(usuariofinal)];
+                    case 3:
+                        address = _a.sent();
+                        if (!(address == 'none')) return [3 /*break*/, 4];
+                        console.log("address es none");
+                        return [2 /*return*/, { address: address }];
                     case 4:
-                        _a.sent();
-                        return [2 /*return*/];
+                        console.log("address no es none");
+                        return [4 /*yield*/, this.raptoreumCore];
+                    case 5: return [4 /*yield*/, (_a.sent()).getAccountBalance(address)];
+                    case 6:
+                        balance = _a.sent();
+                        return [2 /*return*/, { balance: balance, address: address }];
+                    case 7: return [3 /*break*/, 9];
+                    case 8: return [2 /*return*/, false];
+                    case 9: return [2 /*return*/];
                 }
             });
         });

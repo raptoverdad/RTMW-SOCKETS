@@ -13,7 +13,7 @@ export class raptoreumCoreAccess {
     public async getAccountBalance(address:any): Promise<string | null>{
       return new Promise((resolve, reject) => {
         // Retroceder un directorio
-        exec(`raptoreum-cli getbalance ${address}`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
+        exec(`raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/wallet3/ getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
         if (error) {
           console.error(`Error al retroceder el directorio: ${error.message}`);
           reject(error);

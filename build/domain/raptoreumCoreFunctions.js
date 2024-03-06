@@ -51,26 +51,29 @@ var raptoreumCoreAccess = /** @class */ (function () {
             });
         });
     };
-    raptoreumCoreAccess.prototype.getAccountBalance = function (account) {
+    raptoreumCoreAccess.prototype.getAccountBalance = function (address) {
         return __awaiter(this, void 0, void 0, function () {
-            var raptoreumAddress;
             return __generator(this, function (_a) {
-                raptoreumAddress = account;
-                exec("dir", { cwd: 'C:/Users/56947/projects' }, function (error, stdout, stderr) {
-                    if (error) {
-                        console.error("Error al retroceder el directorio: ".concat(error.message));
-                        return;
-                    }
-                    if (stderr) {
-                        console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
-                        return;
-                    }
-                    else {
-                        console.log("Salida est\u00E1ndar del comando \"dir\":\n".concat(stdout));
-                    }
-                    // Listar archivos en el directorio actual  
-                });
-                return [2 /*return*/];
+                return [2 /*return*/, new Promise(function (resolve, reject) {
+                        // Retroceder un directorio
+                        exec("raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/wallet3/ getbalance", { cwd: 'C:/Users/56947/Desktop/raptoreum' }, function (error, stdout, stderr) {
+                            if (error) {
+                                console.error("Error al retroceder el directorio: ".concat(error.message));
+                                reject(error);
+                            }
+                            if (stderr) {
+                                console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
+                                reject(new Error(stderr));
+                            }
+                            else {
+                                console.log("Salida GETACCOUNTBALANCE:\n".concat(stdout));
+                                var outputLines = stdout.trim().split('\n');
+                                var addressBalance = outputLines[outputLines.length - 1].trim();
+                                resolve(addressBalance);
+                            }
+                            // Listar archivos en el directorio actual  
+                        });
+                    })];
             });
         });
     };
@@ -93,8 +96,8 @@ var raptoreumCoreAccess = /** @class */ (function () {
                                 var outputLines = stdout.trim().split('\n');
                                 var walletAddress = outputLines[outputLines.length - 1].trim();
                                 // Devolver la dirección de la cartera
-                                console.log(walletAddress);
-                                resolve(stdout);
+                                console.log("create wallet address", walletAddress);
+                                resolve(walletAddress);
                             }
                         });
                     })];

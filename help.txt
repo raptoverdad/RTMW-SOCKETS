@@ -5,7 +5,7 @@ Help and example commands for specific commands can be seen with:
 comandos que más uso:
 start -NoNewWindow raptoreumd.exe
 raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/wallet3/ getnewaddress
-raptoreum-cli  loadwallet C:/Users/56947/AppData/Roaming/RaptoreumCore/wallet3/
+loadwallet correct way to do it--------->raptoreum-cli loadwallet "C:/Users/56947/Desktop/raptoreum/test-wallet/"
 
 AYUDA COMANDOS CON PROBLEMAS:
 the cmd createwallet "wallet_name" auto load the newly created wallet, you only need to use loadwallet if you restart the raptoreumd.

@@ -61,55 +61,6 @@ var UserGateway = /** @class */ (function () {
             });
         });
     };
-    UserGateway.prototype.insertWallet = function (usuario, wallet) {
-        return __awaiter(this, void 0, void 0, function () {
-            var finalResult, updateQuery, updateValues, _a, result, fields, updateWallet, error_1;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        finalResult = false;
-                        if (!this.pool) {
-                            console.log('El pool no está disponible');
-                            return [2 /*return*/, finalResult];
-                        }
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, 6, , 7]);
-                        updateQuery = 'UPDATE users SET wallet=? WHERE user=?';
-                        updateValues = [wallet, usuario];
-                        if (!(this.pool != null)) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this.pool];
-                    case 2: return [4 /*yield*/, (_b.sent()).execute(updateQuery, updateValues)];
-                    case 3:
-                        _a = _b.sent(), result = _a[0], fields = _a[1];
-                        if (result && 'affectedRows' in result) {
-                            updateWallet = result;
-                            if (updateWallet.affectedRows < 0) {
-                                finalResult = true;
-                                return [2 /*return*/, true];
-                            }
-                            else {
-                                return [2 /*return*/, false];
-                            }
-                        }
-                        else {
-                            console.log("hubo un error updating la wallet");
-                            return [2 /*return*/, false];
-                        }
-                        return [3 /*break*/, 5];
-                    case 4:
-                        console.log("pool is not up");
-                        return [2 /*return*/, false];
-                    case 5: return [3 /*break*/, 7];
-                    case 6:
-                        error_1 = _b.sent();
-                        console.log('Error en el método insertHora', error_1);
-                        return [3 /*break*/, 7];
-                    case 7: return [2 /*return*/, finalResult];
-                }
-            });
-        });
-    };
     UserGateway.prototype.anularHora = function (hora, usuario) {
         return __awaiter(this, void 0, void 0, function () {
             var success, anularHora, valoresDeAnulacion, resultado, affectedRows;
@@ -138,7 +89,39 @@ var UserGateway = /** @class */ (function () {
             });
         });
     };
-    UserGateway.prototype.getMisiones = function () {
+    UserGateway.prototype.getUserAddress = function (user) {
+        return __awaiter(this, void 0, void 0, function () {
+            var getAddressQuery, result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        getAddressQuery = "SELECT address FROM users WHERE usuario=? ";
+                        if (!!this.pool) return [3 /*break*/, 1];
+                        throw new Error('No se pudo conectar a la base de datos');
+                    case 1: return [4 /*yield*/, this.pool.execute(getAddressQuery, [user])];
+                    case 2:
+                        result = (_a.sent())[0];
+                        if (Array.isArray(result)) {
+                            if (result.length == 0 || result == undefined) {
+                                return [2 /*return*/, "no address"];
+                            }
+                            else if (result.length > 0) {
+                                return [2 /*return*/, result[0].address];
+                            }
+                            else {
+                                throw new Error("UNEXPECTED RESULT");
+                            }
+                        }
+                        else {
+                            return [2 /*return*/, "no address"];
+                        }
+                        _a.label = 3;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    UserGateway.prototype.getPersonas = function () {
         return __awaiter(this, void 0, void 0, function () {
             var getVotesQuery, result, newArray_1;
             return __generator(this, function (_a) {
@@ -174,45 +157,9 @@ var UserGateway = /** @class */ (function () {
             });
         });
     };
-    UserGateway.prototype.getPersonas = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var getVotesQuery, result, newArray_2;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        getVotesQuery = "SELECT * FROM misiones";
-                        if (!!this.pool) return [3 /*break*/, 1];
-                        throw new Error('No se pudo conectar a la base de datos');
-                    case 1: return [4 /*yield*/, this.pool.execute(getVotesQuery)];
-                    case 2:
-                        result = (_a.sent())[0];
-                        if (Array.isArray(result)) {
-                            if (result.length == 0 || result == undefined) {
-                                return [2 /*return*/, "no misiones"];
-                            }
-                            else if (result.length > 0) {
-                                newArray_2 = [];
-                                result.forEach(function (i) {
-                                    newArray_2.push(i);
-                                });
-                                return [2 /*return*/, newArray_2];
-                            }
-                            else {
-                                return [2 /*return*/, "no misiones"];
-                            }
-                        }
-                        else {
-                            return [2 /*return*/, "no misiones"];
-                        }
-                        _a.label = 3;
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
     UserGateway.prototype.aceptarRecahazarMision = function (data) {
         return __awaiter(this, void 0, void 0, function () {
-            var updateMisionesQuery, usuariodecodificado, updateMisionesValues, updateHoraResult, _a, result, fields, error_2;
+            var updateMisionesQuery, usuariodecodificado, updateMisionesValues, updateHoraResult, _a, result, fields, error_1;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -251,7 +198,7 @@ var UserGateway = /** @class */ (function () {
                     case 5: return [2 /*return*/, false];
                     case 6: return [3 /*break*/, 8];
                     case 7:
-                        error_2 = _b.sent();
+                        error_1 = _b.sent();
                         return [2 /*return*/, false];
                     case 8: return [2 /*return*/];
                 }
@@ -260,7 +207,7 @@ var UserGateway = /** @class */ (function () {
     };
     UserGateway.prototype.setupDatabase = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var connected, _a, error_3;
+            var connected, _a, error_2;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -273,11 +220,10 @@ var UserGateway = /** @class */ (function () {
                         _b.trys.push([2, 4, , 6]);
                         _a = this;
                         return [4 /*yield*/, mysql.createPool({
-                                host: "monorail.proxy.rlwy.net",
+                                host: "localhost",
                                 user: "root",
-                                password: "fcAEHgD4c5A5babc4Ec4cGG6gbH-Fh43",
-                                database: "railway",
-                                port: 13272
+                                password: "1234",
+                                database: "raptoreumworld",
                             })];
                     case 3:
                         _a.pool = _b.sent();
@@ -285,10 +231,10 @@ var UserGateway = /** @class */ (function () {
                         connected = true; // Establecemos la conexión con éxito
                         return [3 /*break*/, 6];
                     case 4:
-                        error_3 = _b.sent();
+                        error_2 = _b.sent();
                         console.log("ERRORRRRRR");
                         connected = false;
-                        console.error("Error al conectar a la base de datos:", error_3);
+                        console.error("Error al conectar a la base de datos:", error_2);
                         // Esperamos antes de intentar nuevamente
                         return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 2000); })];
                     case 5:

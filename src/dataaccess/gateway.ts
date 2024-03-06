@@ -23,46 +23,7 @@ export class UserGateway {
     return UserGateway.instance;
   }
 
-  public async insertWallet(usuario:String,wallet:String): Promise<boolean> 
-  {
-    let finalResult: boolean = false;
-  
-    if (!this.pool) {
-      console.log('El pool no está disponible');
-      return finalResult;
-    }
-  
-    try {
-  
-      // Verificar si la hora ya existe para este usuario
-      const updateQuery = 'UPDATE users SET wallet=? WHERE user=?';
-      const updateValues = [wallet,usuario];
-  
-      if(this.pool != null){
-        const [result, fields] = await (await this.pool).execute(updateQuery, updateValues);
-    
-        if (result && 'affectedRows' in result){
-          let updateWallet = result as ResultSetHeader;
-          if(updateWallet.affectedRows <0){
-            finalResult=true
-            return true
-          }else{
-            return false
-          }
-        } else {
-          console.log("hubo un error updating la wallet")
-          return false
-        }
-      }else{
-        console.log("pool is not up")
-        return false
-      }
-    } catch (error) {
-      console.log('Error en el método insertHora', error);
-    }
-  
-    return finalResult;
-  }
+
 
   public async anularHora(hora:string,usuario:string) :Promise<boolean> 
   {
@@ -85,7 +46,7 @@ export class UserGateway {
   }
   public async getUserAddress(user:string): Promise<string> 
   {
-    const getAddressQuery="SELECT address FROM users WHERE user=? "
+    const getAddressQuery="SELECT address FROM users WHERE usuario=? "
 
     if (!this.pool) {
       throw new Error('No se pudo conectar a la base de datos');
@@ -185,11 +146,10 @@ export class UserGateway {
     while (!connected) {
       try {
         this.pool = await mysql.createPool({
-          host:"monorail.proxy.rlwy.net",
+          host:"localhost",
           user: "root",
-          password: "fcAEHgD4c5A5babc4Ec4cGG6gbH-Fh43",
-          database: "railway",
-          port:13272
+          password: "1234",
+          database: "raptoreumworld",
         });
         console.log("connected to database")
         connected = true; // Establecemos la conexión con éxito

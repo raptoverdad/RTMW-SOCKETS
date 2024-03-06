@@ -16,7 +16,7 @@ export class socketService {
   constructor() {
     this.key="skrillex"
     this.io = new Server(
-      http.createServer().listen(process.env.PORT),
+      http.createServer().listen(4000),
       {
         cors: {
           origin: "*",
@@ -25,8 +25,8 @@ export class socketService {
         },
       }
     );
-   console.log("conectado en"," ",3001)
-  this.createAddress()
+   console.log("conectado en"," ",4000)
+
   
     this.io.use(async (sockete:any, next:any) => {
       let frontendKey = await sockete.handshake.query.key;
@@ -38,19 +38,26 @@ export class socketService {
     });
 
     this.io.on("connection", async(socket:any) => {
-      let subject:string=await socket.handshake.query.object.subject
-      let user:string=await socket.handshake.query.object.token
-      let tokenValido=await decodeToken(user,CONFIG.JWT_SECRET)
-      if(tokenValido != null)
-      {
-        let usuariofinal = tokenValido.data;
+      console.log("new connection")
+      console.log("object connection:",socket.handshake.query.object)
+
+      // Convierte la cadena nuevamente a un objeto
+      const object: any = JSON.parse(socket.handshake.query.object);
+  
+      let subject:string=object.subject
+
+      let user:string=object.token
+
+  
         if(subject =='balance')
         {      
-          let address=await (await this.gateway).getUserAddress(usuariofinal)
-          let balance= await (await this.raptoreumCore).getAccountBalance(address)
-          socket.emit("balance",{balance:balance,address:address})    
+            let result=await this.getUserInfo(user)
+            if(result!==false){
+              socket.emit("balance",result)
+            }
+     
         }
-      }    
+        
 
   try {
   //socket.on("agregarMision", async (json: any) => {  
@@ -70,24 +77,13 @@ export class socketService {
   //  }
   //
   //});
-  socket.on("getUserInfo", async (json: any, senderSocket:any) => {
-    this.getUserInfo(json.token)
 
-  });
-  socket.on("crearWallet", async (json: any) => {
-    const usuariodecodificado = await decodeToken(json.token, CONFIG.JWT_SECRET);
-    const usuariofinal = usuariodecodificado.data;
-    let result = false;
-    while (!result) {
-        let wallet= await (await this.raptoreumCore).createWallet();
-        if(typeof wallet =='string'){
-           //insertWallet func returns true or false
-          result = await (await this.gateway).insertWallet(usuariofinal, wallet);
-        }else{
-          result=false
-        }
-       
+  socket.on("getBalance", async (json: any, senderSocket:any) => {
+    const result=await this.getUserInfo(json.token)
+    if(result!==false){
+      socket.emit("balance",result)
     }
+    
   });
 
   }catch(e){
@@ -95,32 +91,25 @@ export class socketService {
   }
   })
 }
-private async createAddress(): Promise<void> {
-  await (await this.raptoreumCore).createWallet();
-}
-private async getUserInfo(token:string): Promise<{balance:string,address:string} | Error> {
 
-  let tokenValido= decodeToken(token,CONFIG.JWT_SECRET)
+private async getUserInfo(token:string): Promise<{balance:any,address:string} | {address:string} | false> {
+  let tokenValido=await decodeToken(token,CONFIG.JWT_SECRET)
   if(tokenValido != null)
   {
-    const usuarioFinal = tokenValido.data;
-    try {
-      let address=await (await this.gateway).getUserAddress(usuarioFinal);
-      let balance=await (await this.raptoreumCore).getAccountBalance(address);
-      if(balance!=null){
-        return{balance,address}
-      }else{
-        return new Error("error trying to get account balance")
-      }   
-    } catch (error) {
-      return new Error("error trying to get account balance")
-    }
-   
-  }else
-  {
-    return new Error("not valid token")
-  }
+    let usuariofinal = tokenValido.data;
 
+  let address=await (await this.gateway).getUserAddress(usuariofinal)
+  if(address=='none'){
+    console.log("address es none")
+    return {address:address}
+  }else{
+    console.log("address no es none")
+    let balance= await (await this.raptoreumCore).getAccountBalance(address)
+     return {balance:balance,address:address}  
+  }
+  }else{
+    return false
+  }
 }
   
 }
