@@ -4,14 +4,18 @@ import * as mysql from 'mysql2/promise';
 import {CONFIG} from '../config/testingconfig'
 import {decodeToken} from '../domain/jwtFunctions'
 import { ResultSetHeader } from 'mysql2/promise';
-
+import { MongoClient, Db, Collection } from 'mongodb';
 
 export class UserGateway {
   private static instance: UserGateway;
   private pool: mysql.Pool | null;
+  private db: Db | null;
+  private assetsCollection: Collection<any> | null;
 
   private constructor() {
     this.pool = null;
+    this.db = null;
+    this.assetsCollection = null;
   }
 
   public static async getInstance(): Promise<UserGateway>
@@ -23,27 +27,6 @@ export class UserGateway {
     return UserGateway.instance;
   }
 
-
-
-  public async anularHora(hora:string,usuario:string) :Promise<boolean> 
-  {
-    let success=false
-    let anularHora="DELETE FROM horas WHERE hora = ? AND usuario = ?"
-    let valoresDeAnulacion=[hora,usuario]
-    if(this.pool!= null){
-      let resultado = await this.pool.execute(anularHora, valoresDeAnulacion);
-      if (Array.isArray(resultado)) {
-        const affectedRows = (resultado[0] as any).affectedRows;
-      if (affectedRows !== undefined && affectedRows > 0) {
-         success=true
-       }else{
-        success= false
-      }
-     }
-     
-    }
-    return success
-  }
   public async getUserAddress(user:string): Promise<string> 
   {
     const getAddressQuery="SELECT address FROM users WHERE usuario=? "
@@ -71,73 +54,16 @@ export class UserGateway {
       }
     }
   } 
-  public async getPersonas(): Promise<any[]  | string> 
-  {
-    let getVotesQuery="SELECT * FROM misiones"
+  public async getAssetsComprados(){
 
-    if (!this.pool) {
-      throw new Error('No se pudo conectar a la base de datos');
-    }else{
-      let [result] = await this.pool.execute<RowDataPacket[]>(getVotesQuery);
-
-      if(Array.isArray(result))
-      {
-    
-        if(result.length == 0 || result==undefined)
-        {
-          return "no misiones"
-        }else if(result.length > 0)
-        {
-          let newArray:any=[]
-          result.forEach(i=>{
-            newArray.push(i)
-          })
-          return newArray
-        }else{
-          return "no misiones"
-        }
-
-      }else{
-        return "no misiones"
-      }
-    }
-  } 
-   public async aceptarRecahazarMision(data: {type:string,token: string,descripcion:string }): Promise<boolean> 
-  { 
-    let updateMisionesQuery:string=''
-    if(data.type=='accept'){
-       updateMisionesQuery = "UPDATE misiones SET estado = 'aceptada' WHERE usuario = ? AND descripcion = ?";
-    }else if(data.type=='reject'){
-      updateMisionesQuery = "UPDATE misiones SET estado = 'rechazada' WHERE usuario = ? AND descripcion = ?";
-    }
-      const usuariodecodificado = await decodeToken(data.token, CONFIG.JWT_SECRET);
-      const updateMisionesValues = [usuariodecodificado, data.descripcion];
-      let updateHoraResult: ResultSetHeader | undefined;
-            try {
-              if(this.pool != null){
-                const [result, fields] = await (await this.pool).execute(updateMisionesQuery, updateMisionesValues);
-            
-                if (result && 'affectedRows' in result) {
-                  updateHoraResult = result as ResultSetHeader;
-                  if(updateHoraResult.affectedRows <0){
-                    return true
-                  }else{
-                    return false
-                  }
-                } else {
-                  return false
-                }
-              }else{
-                return false
-              }
-             
-            } catch (error) {
-              return false
-            }
-   
-    
-   
   }
+  public async insertAssetComprado(){
+
+  }
+  public async getAssetBalance(){
+
+  }
+ 
 
   private async setupDatabase(): Promise<void> 
   {
@@ -152,6 +78,11 @@ export class UserGateway {
           database: "raptoreumworld",
         });
         console.log("connected to database")
+        const client = new MongoClient('mongodb://127.0.0.1:27017');
+        await client.connect();
+        this.db = client.db('raptoreumworld');
+        this.assetsCollection = this.db.collection('assets');
+        console.log('Connected to MongoDB');
         connected = true; // Establecemos la conexión con éxito
       } catch (error) {
         console.log("ERRORRRRRR")

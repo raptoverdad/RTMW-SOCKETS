@@ -75,6 +75,15 @@ export class socketService {
       }
     }
   });
+  socket.on("assetmarket", async (json: any, senderSocket:any) => {
+    if(tokenExpression.test(json.token)){
+      const result=await this.getUserInfo(json.token)
+      if(result!==false)
+      {
+        socket.emit("balance",result)
+      }
+    }
+  });
   socket.on("validAddress", async (data: string, senderSocket:any) => {
     try {
       let result=await (await this.raptoreumCore).validateAddress(data)
@@ -101,8 +110,10 @@ private async getUserInfo(token:string): Promise<{balance:any,address:string} | 
   let tokenValido=await decodeToken(token,CONFIG.JWT_SECRET)
   if(tokenValido != null)
   {
+    let myCoins=[]
     let usuariofinal = tokenValido.data;
-
+    let assets=await (await this.gateway).getAssetsComprados(usuariofinal)
+  //
   let address=await (await this.gateway).getUserAddress(usuariofinal)
   if(address=='none'){
     console.log("address es none")
@@ -117,7 +128,15 @@ private async getUserInfo(token:string): Promise<{balance:any,address:string} | 
   }
 
 }
-  
+
+private async getAssetsMarket(token:string): Promise<{balance:any,address:string} | {address:string} | false> {
+  let result=this.gateway.getAssetsEnVenta()
+  let returnObject=[]
+  result.forEach(element => {
+    
+  });
+
+}
 }
  
 

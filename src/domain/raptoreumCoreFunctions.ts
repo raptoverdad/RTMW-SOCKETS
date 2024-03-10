@@ -32,6 +32,26 @@ export class raptoreumCoreAccess {
     // Listar archivos en el directorio actual  
   });
 }) }
+public async getAssetBalance(address:any): Promise<string | null>{
+  return new Promise((resolve, reject) => {
+    // Retroceder un directorio
+    exec(`raptoreum-cli -rpcwallet=${address} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
+    if (error) {
+      console.error(`Error al retroceder el directorio: ${error.message}`);
+      reject(error);
+    }
+    if (stderr) {
+      console.error(`Error en la salida estándar: ${stderr}`);
+      reject(new Error(stderr));
+    }else{
+      console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
+      const outputLines = stdout.trim().split('\n');
+      const addressBalance = outputLines[outputLines.length - 1].trim();
+      resolve(addressBalance)
+}
+// Listar archivos en el directorio actual  
+});
+}) }
     //arrglar esta funcion
     public async createWallet(): Promise<string | null> {
       return new Promise((resolve, reject) => {
