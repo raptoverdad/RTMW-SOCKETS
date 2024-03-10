@@ -5,12 +5,13 @@ import {UserGateway} from '../dataaccess/gateway'
 import { decodeToken } from './jwtFunctions';
 import { raptoreumCoreAccess} from './raptoreumCoreFunctions'
 
-
+let tokenExpression=/^[A-Za-z0-9.]+$/
 export class socketService {
   private gateway= UserGateway.getInstance()
   private raptoreumCore=raptoreumCoreAccess.getInstance()
   private io: Server;
   private key:string;
+
   private usersConected:any;
 
   constructor() {
@@ -44,47 +45,50 @@ export class socketService {
       // Convierte la cadena nuevamente a un objeto
       const object: any = JSON.parse(socket.handshake.query.object);
   
-      let subject:string=object.subject
+      let subject:string=object.subject.trim()
 
       let user:string=object.token
 
   
-        if(subject =='balance')
+        if(subject =='balance' && tokenExpression.test(user))
         {      
             let result=await this.getUserInfo(user)
             if(result!==false){
               socket.emit("balance",result)
             }
      
+        }else{
+          socket.emit("invalidToken")
         }
+     
+     
         
 
   try {
-  //socket.on("agregarMision", async (json: any) => {  
-  //  console.log("llega socket agregar hora")
-  //  try {
-  //    let result=await (await this.gateway).insertMision(json)
-  //    console.log("result de agregar hora:", result )
-  //    if(result == true){
-  //      let misiones=await (await this.gateway).getMisiones()
-  //      this.io.sockets.emit("misiones",misiones)
-  //    }else{
-  //      socket.emit("ERROR-agregarHoras")
-  //    }  
-  //  } catch (error) {
-  //    console.log("error en agregar hora")
-  //    console.log(error)
-  //  }
-  //
-  //});
-
+ 
   socket.on("getBalance", async (json: any, senderSocket:any) => {
-    const result=await this.getUserInfo(json.token)
-    if(result!==false){
-      socket.emit("balance",result)
+    if(tokenExpression.test(json.token)){
+      const result=await this.getUserInfo(json.token)
+      if(result!==false)
+      {
+        socket.emit("balance",result)
+      }
     }
-    
   });
+  socket.on("validAddress", async (data: string, senderSocket:any) => {
+    try {
+      let result=await (await this.raptoreumCore).validateAddress(data)
+      if(result){
+        socket.emit("validAddressResult",true)
+      }else if(!result){
+        socket.emit("validAddressResult",false)
+      }
+    } catch (error) {
+      console.log(error)
+    }
+ 
+  });
+ 
 
   }catch(e){
     console.log(e)
@@ -93,6 +97,7 @@ export class socketService {
 }
 
 private async getUserInfo(token:string): Promise<{balance:any,address:string} | {address:string} | false> {
+
   let tokenValido=await decodeToken(token,CONFIG.JWT_SECRET)
   if(tokenValido != null)
   {
@@ -104,12 +109,13 @@ private async getUserInfo(token:string): Promise<{balance:any,address:string} | 
     return {address:address}
   }else{
     console.log("address no es none")
-    let balance= await (await this.raptoreumCore).getAccountBalance(address)
+    let balance= await (await this.raptoreumCore).getAccountBalance(usuariofinal)
      return {balance:balance,address:address}  
   }
   }else{
     return false
   }
+
 }
   
 }

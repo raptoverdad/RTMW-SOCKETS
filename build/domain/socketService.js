@@ -126,6 +126,31 @@ var socketService = /** @class */ (function () {
                                     }
                                 });
                             }); });
+                            socket.on("validAddress", function (data, senderSocket) { return __awaiter(_this, void 0, void 0, function () {
+                                var result, error_1;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            _a.trys.push([0, 3, , 4]);
+                                            return [4 /*yield*/, this.raptoreumCore];
+                                        case 1: return [4 /*yield*/, (_a.sent()).validateAddress(data)];
+                                        case 2:
+                                            result = _a.sent();
+                                            if (result) {
+                                                socket.emit("validAddressResult", true);
+                                            }
+                                            else if (!result) {
+                                                socket.emit("validAddressResult", false);
+                                            }
+                                            return [3 /*break*/, 4];
+                                        case 3:
+                                            error_1 = _a.sent();
+                                            console.log(error_1);
+                                            return [3 /*break*/, 4];
+                                        case 4: return [2 /*return*/];
+                                    }
+                                });
+                            }); });
                         }
                         catch (e) {
                             console.log(e);
@@ -155,7 +180,7 @@ var socketService = /** @class */ (function () {
                     case 4:
                         console.log("address no es none");
                         return [4 /*yield*/, this.raptoreumCore];
-                    case 5: return [4 /*yield*/, (_a.sent()).getAccountBalance(address)];
+                    case 5: return [4 /*yield*/, (_a.sent()).getAccountBalance(usuariofinal)];
                     case 6:
                         balance = _a.sent();
                         return [2 /*return*/, { balance: balance, address: address }];

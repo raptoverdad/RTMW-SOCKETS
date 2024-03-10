@@ -1,3 +1,5 @@
+import { rejects } from "assert";
+
 const { exec } = require('child_process');
 
 export class raptoreumCoreAccess {
@@ -13,7 +15,7 @@ export class raptoreumCoreAccess {
     public async getAccountBalance(address:any): Promise<string | null>{
       return new Promise((resolve, reject) => {
         // Retroceder un directorio
-        exec(`raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/wallet3/ getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
+        exec(`raptoreum-cli -rpcwallet=${address} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
         if (error) {
           console.error(`Error al retroceder el directorio: ${error.message}`);
           reject(error);
@@ -51,7 +53,39 @@ export class raptoreumCoreAccess {
         });
       });
     }
-   
+    public async validateAddress(address: string): Promise<boolean> {
+      return new Promise((resolve, reject) => {
+        exec(`raptoreum-cli validateaddress "${address}"`, { cwd: 'C:/Users/56947/Desktop/raptoreum' }, (error: any, stdout: any, stderr: any) => {
+          if (error) {
+            console.error(`Error al ejecutar el comando: ${error.message}`);
+            reject(error.message);
+          } else if (stderr) {
+            console.error(`Error en la salida estándar: ${stderr}`);
+            reject(stderr);
+          } else {
+            const output = stdout;
+            if (output.indexOf('"isvalid":') !== -1) {
+              const startIndex = output.indexOf('"isvalid":') + '"isvalid":'.length;
+              if (startIndex === undefined) {
+                reject(new Error('No se pudo encontrar el índice de inicio'));
+              } else {
+                const endIndex = output.indexOf(',', startIndex) !== -1 ? output.indexOf(',', startIndex) : output.indexOf('}', startIndex);
+                let valid = output.substring(startIndex, endIndex).trim();
+                if (valid === 'true') {
+                  resolve(true);
+                } else if (valid === 'false') {
+                  resolve(false);
+                } else {
+                  reject(new Error('No se pudo determinar si la dirección es válida'));
+                }
+              }
+            } else {
+              reject(new Error('No se pudo encontrar el campo "isvalid" en la salida'));
+            }
+          }
+        });
+      });
+    }
 
     
 }

@@ -56,7 +56,7 @@ var raptoreumCoreAccess = /** @class */ (function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         // Retroceder un directorio
-                        exec("raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/wallet3/ getbalance", { cwd: 'C:/Users/56947/Desktop/raptoreum' }, function (error, stdout, stderr) {
+                        exec("raptoreum-cli -rpcwallet=".concat(address, " getbalance"), { cwd: 'C:/Users/56947/Desktop/raptoreum' }, function (error, stdout, stderr) {
                             if (error) {
                                 console.error("Error al retroceder el directorio: ".concat(error.message));
                                 reject(error);
@@ -98,6 +98,49 @@ var raptoreumCoreAccess = /** @class */ (function () {
                                 // Devolver la dirección de la cartera
                                 console.log("create wallet address", walletAddress);
                                 resolve(walletAddress);
+                            }
+                        });
+                    })];
+            });
+        });
+    };
+    raptoreumCoreAccess.prototype.validateAddress = function (address) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, new Promise(function (resolve, reject) {
+                        exec("raptoreum-cli validateaddress \"".concat(address, "\""), { cwd: 'C:/Users/56947/Desktop/raptoreum' }, function (error, stdout, stderr) {
+                            if (error) {
+                                console.error("Error al ejecutar el comando: ".concat(error.message));
+                                reject(error.message);
+                            }
+                            else if (stderr) {
+                                console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
+                                reject(stderr);
+                            }
+                            else {
+                                var output = stdout;
+                                if (output.indexOf('"isvalid":') !== -1) {
+                                    var startIndex = output.indexOf('"isvalid":') + '"isvalid":'.length;
+                                    if (startIndex === undefined) {
+                                        reject(new Error('No se pudo encontrar el índice de inicio'));
+                                    }
+                                    else {
+                                        var endIndex = output.indexOf(',', startIndex) !== -1 ? output.indexOf(',', startIndex) : output.indexOf('}', startIndex);
+                                        var valid = output.substring(startIndex, endIndex).trim();
+                                        if (valid === 'true') {
+                                            resolve(true);
+                                        }
+                                        else if (valid === 'false') {
+                                            resolve(false);
+                                        }
+                                        else {
+                                            reject(new Error('No se pudo determinar si la dirección es válida'));
+                                        }
+                                    }
+                                }
+                                else {
+                                    reject(new Error('No se pudo encontrar el campo "isvalid" en la salida'));
+                                }
                             }
                         });
                     })];
