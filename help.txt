@@ -280,18 +280,19 @@ If you want another location in your docker, you can do it but then you would ne
 install and extract in ubuntu
 $ sudo apt-get update && apt-get install -y
 $ sudo apt-get curl -y
-$ sudo curl -o RTM.tar.gz https://github.com/Raptor3um/raptoreum/releases/download/1.3.17.05/raptoreum-ubuntu20-1.3.17.05.tar.gz
+$ sudo curl -o RTM.tar.gz https://github.com/Raptor3um/raptoreum/releases/download/1.4.18.99/raptoreum-ubuntu22-1.4.18.99.tar.gz
 $ sudo tar -zxf RTM.tar.gz
 
 Sudo for curl kek xX
 d
 
 $ sudo apt-get update && sudo apt-get install curl -y
-$ curl -L https://github.com/Raptor3um/raptoreum/releases/download/1.3.17.05/raptoreum-ubuntu20-1.3.17.05.tar.gz | tar xz
+$ curl -L https://github.com/Raptor3um/raptoreum/releases/download/1.4.18.99/raptoreum-ubuntu22-1.4.18.99.tar.gz | tar xz
 
 @Fosgen Fixed a little for you ;
 COMANDOS ASSETS:
-raptoreum-cli getaddressbalance '[\"rt79N1qGMHrAGBmqxFFeTTYfNKqMaAfPJq\"]'         
+raptoreum-cli createasset '{\"name\":\"MiMoneda\", \"updatable\":true, \"is_unique\":false, \"decimalpoint\":0, \"maxMintCount\":100000, \"type\":0,\"ownerAddress\":\"rau2d3EvbQeHC2UZDw4t5bmz86GKqsR21y\"}'
+./raptoreum-cli getaddressbalance "{\"addresses\":[\"ri5S9pA24UZu7rAYj6ebPB9KxzE4ajZQBe\"]}"       
 createasset "{\"name\":\"MyCoin\",\"updatable\":false,\"is_unique\":false,\"decimalpoint\":0,\"type\":0,\"targetAddress\":\"rau2d3EvbQeHC2UZDw4t5bmz86GKqsR21y\",\"issueFrequency\":0,\"amount\":10,\"ownerAddress\":\"rau2d3EvbQeHC2UZDw4t5bmz86GKqsR21y\"}"
 
 SSH HOSTINGER:

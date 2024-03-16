@@ -11,10 +11,12 @@ export class UserGateway {
   private pool: mysql.Pool | null;
   private db: Db | null;
   private assetsCollection: Collection<any> | null;
+  private assetsEnVentaCollection:Collection<any> | null;
 
   private constructor() {
     this.pool = null;
     this.db = null;
+    this.assetsEnVentaCollection= null
     this.assetsCollection = null;
   }
 
@@ -60,10 +62,99 @@ export class UserGateway {
   public async insertAssetComprado(){
 
   }
-  public async getAssetBalance(){
+  public async detenerVenta(usuario: string, asset: string): Promise<boolean> {
+    try {
+        const resultEliminarVenta = await this.assetsEnVentaCollection?.deleteOne({vendedor: usuario, asset: asset});
+        if (resultEliminarVenta && resultEliminarVenta.deletedCount) {
+            if (resultEliminarVenta.deletedCount === 1) {
+                return true;
+            } else if (resultEliminarVenta.deletedCount === 0) {
+                return false;
+            }
+        }
+        return false; // Si ninguna de las condiciones anteriores se cumple
+    } catch (error) {
+        console.error('Error al eliminar el elemento:', error);
+        return false;
+    }
+}
+  public async getMarketAssets(): Promise<any[] >{
+   return new Promise(async (resolve, reject) => {
+    const resultGetAssetsEnVenta = await  this.assetsEnVentaCollection?.find().toArray();
+    if (resultGetAssetsEnVenta && resultGetAssetsEnVenta.length > 0) {
+      // Se encontraron assets
+      return resolve(resultGetAssetsEnVenta)
+    }  else if( resultGetAssetsEnVenta==undefined|| resultGetAssetsEnVenta.length == 0 ){
+      return resolve([])
+    }
+      // No se encontraron assets
+    
+  })}
+  public async getAssetEnVentaPorVendedor(asset: string,vendedor:string): Promise<boolean> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        if (!this.db) {
+          console.log('El pool no está disponible');
+          return reject(new Error("la pool no está activa"));
+        }
+        
+        // Verificar si el pool de la base de datos está disponible
+        if (this.db) {
+          let resultGetAsset = await this.assetsCollection?.countDocuments({asset: asset,vendedor});
 
+          if (resultGetAsset && resultGetAsset > 0) {
+            // Se encontraron assets
+            return resolve(true)
+          } else   if (resultGetAsset == 0 ||resultGetAsset == undefined){
+            // No se encontraron assets
+            return resolve(false)
+          }
+     
+        }
+      } catch (error) {
+        console.log("Error en la función de inserción de billetera:", error);
+        return reject(new Error("error tratando de conseguir aaset"));
+      }
+    });
   }
- 
+  public async getMarketAssetsByUser(user:string): Promise<any[]>{
+    return new Promise(async (resolve, reject) => {
+     const resultGetAssetsEnVenta = await  this.assetsEnVentaCollection?.find({vendedor:user}).toArray();
+     if (resultGetAssetsEnVenta && resultGetAssetsEnVenta.length > 0) {
+       // Se encontraron assets
+       return resolve(resultGetAssetsEnVenta)
+     } else if( resultGetAssetsEnVenta==undefined|| resultGetAssetsEnVenta.length == 0 ){
+       // No se encontraron assets
+       return resolve([])
+     }
+   })}
+  
+  public async getAssets(): Promise< any[]> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        if (!this.db) {
+          console.log('El pool no está disponible');
+          return reject(new Error("la pool no está activa"));
+        }
+        
+        // Verificar si el pool de la base de datos está disponible
+        if (this.db) {
+          const resultGetAsset = await  this.assetsCollection?.find().toArray();
+          if (resultGetAsset && resultGetAsset.length > 0) {
+            // Se encontraron assets
+            return resolve(resultGetAsset)
+          }  else if( resultGetAsset==undefined|| resultGetAsset.length == 0 ){
+            // No se encontraron assets
+            return resolve([])
+          }
+     
+        }
+      } catch (error) {
+        console.log("Error en la función de inserción de billetera:", error);
+        return reject(new Error("error tratando de conseguir aaset"));
+      }
+    });
+  }
 
   private async setupDatabase(): Promise<void> 
   {
@@ -82,6 +173,7 @@ export class UserGateway {
         await client.connect();
         this.db = client.db('raptoreumworld');
         this.assetsCollection = this.db.collection('assets');
+        this.assetsEnVentaCollection = this.db.collection('assetsEnVenta');
         console.log('Connected to MongoDB');
         connected = true; // Establecemos la conexión con éxito
       } catch (error) {

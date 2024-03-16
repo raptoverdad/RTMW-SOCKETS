@@ -12,46 +12,137 @@ export class raptoreumCoreAccess {
       }
       return raptoreumCoreAccess.instance;
     }
-    public async getAccountBalance(address:any): Promise<string | null>{
+    public async getAccountBalance(usuario:any): Promise<number>{
       return new Promise((resolve, reject) => {
-        // Retroceder un directorio
-        exec(`raptoreum-cli -rpcwallet=${address} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
-        if (error) {
-          console.error(`Error al retroceder el directorio: ${error.message}`);
-          reject(error);
-        }
-        if (stderr) {
-          console.error(`Error en la salida estándar: ${stderr}`);
-          reject(new Error(stderr));
-        }else{
-          console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
-          const outputLines = stdout.trim().split('\n');
-          const addressBalance = outputLines[outputLines.length - 1].trim();
-          resolve(addressBalance)
-    }
-    // Listar archivos en el directorio actual  
-  });
+        if(usuario=="pedrito"){
+          exec(`raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/${usuario} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
+              if (error) {
+                console.error(`Error al retroceder el directorio: ${error.message}`);
+                reject(new Error(error));
+              }
+              if (stderr) {
+                console.error(`Error en la salida estándar: ${stderr}`);
+                reject(new Error(stderr));
+              }else{
+                console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
+                const outputLines = stdout.trim().split('\n');
+                const addressBalance = outputLines[outputLines.length - 1].trim();
+                let float=parseFloat(addressBalance)
+                resolve(float)
+          }
+          // Listar archivos en el directorio actual  
+        });
+      }else{ 
+      exec(`raptoreum-cli -rpcwallet=${usuario} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
+      if (error) {
+        console.error(`Error al retroceder el directorio: ${error.message}`);
+        reject(new Error(error));
+      }
+      if (stderr) {
+        console.error(`Error en la salida estándar: ${stderr}`);
+        reject(new Error(stderr));
+      }else{
+        console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
+        const outputLines = stdout.trim().split('\n');
+        const addressBalance = outputLines[outputLines.length - 1].trim();
+        let float=parseFloat(addressBalance)
+        resolve(float)
+  }
+  // Listar archivos en el directorio actual  
+});}
+  
 }) }
-public async getAssetBalance(address:any): Promise<string | null>{
+public async getAssetBalance(vendedor:string,addressVendedor:string,assetId:string): Promise<number>{
   return new Promise((resolve, reject) => {
     // Retroceder un directorio
-    exec(`raptoreum-cli -rpcwallet=${address} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
-    if (error) {
-      console.error(`Error al retroceder el directorio: ${error.message}`);
-      reject(error);
-    }
-    if (stderr) {
-      console.error(`Error en la salida estándar: ${stderr}`);
-      reject(new Error(stderr));
-    }else{
-      console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
-      const outputLines = stdout.trim().split('\n');
-      const addressBalance = outputLines[outputLines.length - 1].trim();
-      resolve(addressBalance)
-}
-// Listar archivos en el directorio actual  
-});
+//    exec(`raptoreum-cli -rpcwallet=${address} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
+//    if (error) {
+//      console.error(`Error al retroceder el directorio: ${error.message}`);
+//      reject(error);
+//    }
+//    if (stderr) {
+//      console.error(`Error en la salida estándar: ${stderr}`);
+//      reject(new Error(stderr));
+//    }else{
+//      console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
+//      const outputLines = stdout.trim().split('\n');
+//      const addressBalance = outputLines[outputLines.length - 1].trim();
+//      resolve(addressBalance)
+//}
+//// Listar archivos en el directorio actual  
+//});
+const numeroAleatorio = Math.floor(Math.random() * 11);
+resolve(numeroAleatorio)
 }) }
+public async withdrawToken(billeteraDelToken:string,to:string,cantidad:number,assetID:string): Promise<boolean>{
+  //revisar el balance de raptoreum para poder sacar el token
+  return new Promise((resolve, reject) => {
+    // Retroceder un directorio
+//    exec(`raptoreum-cli -rpcwallet=${address} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
+//    if (error) {
+//      console.error(`Error al retroceder el directorio: ${error.message}`);
+//      reject(error);
+//    }
+//    if (stderr) {
+//      console.error(`Error en la salida estándar: ${stderr}`);
+//      reject(new Error(stderr));
+//    }else{
+//      console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
+//      const outputLines = stdout.trim().split('\n');
+//      const addressBalance = outputLines[outputLines.length - 1].trim();
+//      resolve(addressBalance)
+//}
+//// Listar archivos en el directorio actual  
+//});
+resolve(true)
+//reject("Insufficient tokens funds")
+}) }
+public async withdrawRaptoreum(username:string,address:string,amount:number): Promise<string | false> {
+  return new Promise((resolve, reject) => {
+    if(username=="pedrito"){
+      exec(`raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/${username} sendtoaddress "${address}" ${amount}`, { cwd: 'C:/Users/56947/Desktop/raptoreum' }, (error: any, stdout: any, stderr: any) => {
+        if (error) {
+          console.error(`Error al ejecutar el comando: ${error.message}`);
+          return reject(false);
+        } else if (stderr) {
+          console.error(`Error en la salida estándar: ${stderr}`);
+          return reject(false);
+        } else {
+            console.log(stdout)
+          console.log("typeof de stdout:", typeof stdout)
+          console.log("length de stdout:",stdout.length)
+          if( stdout.length== 66){
+            let output=stdout
+            return resolve(output);
+          }else if(stdout.includes("Insufficient")){
+            console.log("rechazando")
+            return reject("Insufficient raptoreum funds");
+          }
+    }});
+    }else{
+    exec(`raptoreum-cli -rpcwallet=${username} sendtoaddress "${address}" ${amount}`, { cwd: 'C:/Users/56947/Desktop/raptoreum' }, (error: any, stdout: any, stderr: any) => {
+      if (error) {
+        console.error(`Error al ejecutar el comando: ${error.message}`);
+        return reject(false);
+      } else if (stderr) {
+        console.error(`Error en la salida estándar: ${stderr}`);
+        return reject(false);
+      } else {
+          console.log(stdout)
+        console.log("typeof de stdout:", typeof stdout)
+        console.log("length de stdout:",stdout.length)
+        if( stdout.length== 66){
+          let output=stdout
+        
+          return resolve(output);
+        }else{
+          console.log("rechazando")
+          return reject("Insufficient raptoreum funds");
+        }
+  }});
+}
+  });
+}
     //arrglar esta funcion
     public async createWallet(): Promise<string | null> {
       return new Promise((resolve, reject) => {
