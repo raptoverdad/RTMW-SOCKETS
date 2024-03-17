@@ -148,7 +148,7 @@ var raptoreumCoreAccess = /** @class */ (function () {
                         //}
                         //// Listar archivos en el directorio actual  
                         //});
-                        resolve(true);
+                        resolve(false);
                         //reject("Insufficient tokens funds")
                     })];
             });
