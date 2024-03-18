@@ -94,7 +94,7 @@ public async withdrawToken(billeteraDelToken:string,to:string,cantidad:number,as
 //}
 //// Listar archivos en el directorio actual  
 //});
-resolve(false)
+resolve(true)
 //reject("Insufficient tokens funds")
 }) }
 public async withdrawRaptoreum(username:string,address:string,amount:number): Promise<string | false> {

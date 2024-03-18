@@ -1,6 +1,7 @@
 
 import { createPool,RowDataPacket } from 'mysql2';
 import * as mysql from 'mysql2/promise';
+const brcryptjs= require('bcryptjs')
 import {CONFIG} from '../config/testingconfig'
 import {decodeToken} from '../domain/jwtFunctions'
 import { ResultSetHeader } from 'mysql2/promise';
@@ -27,6 +28,46 @@ export class UserGateway {
       let setup = await UserGateway.instance.setupDatabase();
     }
     return UserGateway.instance;
+  }
+  public async verifyAccountBlocked(user:string): Promise<boolean | undefined>{
+    const result= await  this.assetsEnVentaCollection?.find({usuario:user}).toArray();
+    if(result){
+      let transactionsBlocked=result[0].transactionsBlocked
+      if(transactionsBlocked==true){
+        return true
+      }else{
+        return false
+      }
+    }
+  }
+  public async blockOrUnblockUserTransactions(user:string,type:string): Promise<boolean | undefined>{
+    if(type=='block'){
+      const resultado = await  this.assetsEnVentaCollection?.updateOne(
+        { usuario: user }, // Filtro para encontrar el documento
+         { $set: { transactionsBlocked: true } } // Actualización del campo 'user'
+      );
+      if (resultado) {
+          if(resultado.modifiedCount > 0){
+            return true
+          }else{
+            return false
+          }
+      }
+
+    }else if(type=='unblock'){
+      const resultado = await  this.assetsEnVentaCollection?.updateOne(
+        { usuario: user }, // Filtro para encontrar el documento
+         { $set: { transactionsBlocked: false } } // Actualización del campo 'user'
+      );
+      if (resultado) {
+          if(resultado.modifiedCount > 0){
+            return true
+          }else{
+            return false
+          }
+      }
+    }
+ 
   }
 
   public async getUserAddress(user:string): Promise<string> 
@@ -56,6 +97,26 @@ export class UserGateway {
       }
     }
   } 
+  public async verifyPassword(usuario:string,contrasena:string): Promise<boolean> {
+    return new Promise(async (resolve, reject) => {
+      if(this.pool){
+        let [result]: any = await (await this.pool).execute("SELECT usuario,contrasena FROM users WHERE usuario = ?", [usuario]);
+  
+        if (result) {
+          // Verifica que la contraseña ingresada coincida con la almacenada en la base de datos
+          const passwordMatch = brcryptjs.compareSync(contrasena, result.contrasena);
+          if (passwordMatch) {
+            resolve(true);
+          } else {
+            reject(false);
+          }
+        } else {
+          reject(false);
+        }
+      }
+ 
+    });
+  }
   public async getAssetsComprados(){
 
   }

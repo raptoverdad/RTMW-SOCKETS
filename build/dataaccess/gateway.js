@@ -38,6 +38,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserGateway = void 0;
 var mysql = require("mysql2/promise");
+var brcryptjs = require('bcryptjs');
 var mongodb_1 = require("mongodb");
 var UserGateway = /** @class */ (function () {
     function UserGateway() {
@@ -59,6 +60,72 @@ var UserGateway = /** @class */ (function () {
                         setup = _a.sent();
                         _a.label = 2;
                     case 2: return [2 /*return*/, UserGateway.instance];
+                }
+            });
+        });
+    };
+    UserGateway.prototype.verifyAccountBlocked = function (user) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function () {
+            var result, transactionsBlocked;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0: return [4 /*yield*/, ((_a = this.assetsEnVentaCollection) === null || _a === void 0 ? void 0 : _a.find({ usuario: user }).toArray())];
+                    case 1:
+                        result = _b.sent();
+                        if (result) {
+                            transactionsBlocked = result[0].transactionsBlocked;
+                            if (transactionsBlocked == true) {
+                                return [2 /*return*/, true];
+                            }
+                            else {
+                                return [2 /*return*/, false];
+                            }
+                        }
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    UserGateway.prototype.blockOrUnblockUserTransactions = function (user, type) {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function () {
+            var resultado, resultado;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        if (!(type == 'block')) return [3 /*break*/, 2];
+                        return [4 /*yield*/, ((_a = this.assetsEnVentaCollection) === null || _a === void 0 ? void 0 : _a.updateOne({ usuario: user }, // Filtro para encontrar el documento
+                            { $set: { transactionsBlocked: true } } // Actualización del campo 'user'
+                            ))];
+                    case 1:
+                        resultado = _c.sent();
+                        if (resultado) {
+                            if (resultado.modifiedCount > 0) {
+                                return [2 /*return*/, true];
+                            }
+                            else {
+                                return [2 /*return*/, false];
+                            }
+                        }
+                        return [3 /*break*/, 4];
+                    case 2:
+                        if (!(type == 'unblock')) return [3 /*break*/, 4];
+                        return [4 /*yield*/, ((_b = this.assetsEnVentaCollection) === null || _b === void 0 ? void 0 : _b.updateOne({ usuario: user }, // Filtro para encontrar el documento
+                            { $set: { transactionsBlocked: false } } // Actualización del campo 'user'
+                            ))];
+                    case 3:
+                        resultado = _c.sent();
+                        if (resultado) {
+                            if (resultado.modifiedCount > 0) {
+                                return [2 /*return*/, true];
+                            }
+                            else {
+                                return [2 /*return*/, false];
+                            }
+                        }
+                        _c.label = 4;
+                    case 4: return [2 /*return*/];
                 }
             });
         });
@@ -92,6 +159,40 @@ var UserGateway = /** @class */ (function () {
                         _a.label = 3;
                     case 3: return [2 /*return*/];
                 }
+            });
+        });
+    };
+    UserGateway.prototype.verifyPassword = function (usuario, contrasena) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
+                        var result, passwordMatch;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    if (!this.pool) return [3 /*break*/, 3];
+                                    return [4 /*yield*/, this.pool];
+                                case 1: return [4 /*yield*/, (_a.sent()).execute("SELECT usuario,contrasena FROM users WHERE usuario = ?", [usuario])];
+                                case 2:
+                                    result = (_a.sent())[0];
+                                    if (result) {
+                                        passwordMatch = brcryptjs.compareSync(contrasena, result.contrasena);
+                                        if (passwordMatch) {
+                                            resolve(true);
+                                        }
+                                        else {
+                                            reject(false);
+                                        }
+                                    }
+                                    else {
+                                        reject(false);
+                                    }
+                                    _a.label = 3;
+                                case 3: return [2 /*return*/];
+                            }
+                        });
+                    }); })];
             });
         });
     };
