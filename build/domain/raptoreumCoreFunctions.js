@@ -152,34 +152,76 @@ var raptoreumCoreAccess = /** @class */ (function () {
             });
         });
     };
+    //public async withdrawRaptoreum(username:string,address:string,amount:number): Promise<string | false> {
+    //  return new Promise((resolve, reject) => {
+    //      exec(`raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/${username} sendtoaddress "${address}" ${amount}`, { cwd: 'C:/Users/56947/Desktop/raptoreum' }, (error: any, stdout: any, stderr: any) => {
+    //        if (error) {
+    //          console.error(`Error al ejecutar el comando: ${error.message}`);
+    //          return reject(false);
+    //        } else if (stderr) {
+    //          console.error(`Error en la salida estándar: ${stderr}`);
+    //          return reject(false);
+    //        } else {
+    //            console.log(stdout)
+    //          console.log("typeof de stdout:", typeof stdout)
+    //          console.log("length de stdout:",stdout.length)
+    //          if( stdout.length== 66){
+    //            let output=stdout
+    //            return resolve(output);
+    //          }else if(stdout.includes("Insufficient")){
+    //            console.log("rechazando")
+    //            return reject("Insufficient raptoreum funds");
+    //          }
+    //    }});
+    //  });
+    //}
     raptoreumCoreAccess.prototype.withdrawRaptoreum = function (username, address, amount) {
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) {
-                        exec("raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/".concat(username, " sendtoaddress \"").concat(address, "\" ").concat(amount), { cwd: 'C:/Users/56947/Desktop/raptoreum' }, function (error, stdout, stderr) {
-                            if (error) {
-                                console.error("Error al ejecutar el comando: ".concat(error.message));
-                                return reject(false);
-                            }
-                            else if (stderr) {
-                                console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
-                                return reject(false);
-                            }
-                            else {
-                                console.log(stdout);
-                                console.log("typeof de stdout:", typeof stdout);
-                                console.log("length de stdout:", stdout.length);
-                                if (stdout.length == 66) {
-                                    var output = stdout;
-                                    return resolve(output);
-                                }
-                                else if (stdout.includes("Insufficient")) {
-                                    console.log("rechazando");
-                                    return reject("Insufficient raptoreum funds");
-                                }
+                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
+                        var rpcUser, rpcPassword, rpcHost, requestData, response, accountBalance, error_2;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    _a.trys.push([0, 2, , 3]);
+                                    rpcUser = 'rodrigo';
+                                    rpcPassword = '1234';
+                                    rpcHost = "http://localhost:10225/wallet/".concat(username);
+                                    requestData = {
+                                        jsonrpc: '1.0',
+                                        id: 'curltest',
+                                        method: 'sendtoaddress',
+                                        params: [address, amount],
+                                    };
+                                    return [4 /*yield*/, axios_1.default.post(rpcHost, requestData, {
+                                            auth: {
+                                                username: rpcUser,
+                                                password: rpcPassword,
+                                            },
+                                            headers: {
+                                                'Content-Type': 'text/plain;',
+                                            },
+                                        })];
+                                case 1:
+                                    response = _a.sent();
+                                    if (response) {
+                                        console.log(response);
+                                        accountBalance = parseFloat(response.data.result);
+                                        return [2 /*return*/, accountBalance];
+                                    }
+                                    else {
+                                        throw new Error('Error en el formato de respuesta RPC');
+                                    }
+                                    return [3 /*break*/, 3];
+                                case 2:
+                                    error_2 = _a.sent();
+                                    console.error("Error enviar rtm de la cuenta: ".concat(error_2.message));
+                                    throw new Error(error_2);
+                                case 3: return [2 /*return*/];
                             }
                         });
-                    })];
+                    }); })];
             });
         });
     };

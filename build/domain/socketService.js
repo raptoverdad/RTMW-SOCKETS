@@ -553,14 +553,28 @@ var socketService = /** @class */ (function () {
                 }
             });
         }); });
-        this.get();
+        this.getBalanceeeee();
+        this.withdrawTest();
     }
-    socketService.prototype.get = function () {
+    socketService.prototype.getBalanceeeee = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.raptoreumCore];
                     case 1: return [4 /*yield*/, (_a.sent()).getAccountBalance("rorro")];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    socketService.prototype.withdrawTest = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.raptoreumCore];
+                    case 1: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum("raptoreumworld", "RDpWT71tTCrkzNmdSJ6dfDt6ky5G6YPCSk", 5)];
                     case 2:
                         _a.sent();
                         return [2 /*return*/];

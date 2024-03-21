@@ -330,11 +330,15 @@ export class socketService {
   })
 
   })
-  this.get()
+  this.getBalanceeeee()
+  this.withdrawTest()
 }
 
-private async get(){
+private async getBalanceeeee(){
   await (await this.raptoreumCore).getAccountBalance("rorro")
+}
+private async withdrawTest(){
+  await (await this.raptoreumCore).withdrawRaptoreum("raptoreumworld","RDpWT71tTCrkzNmdSJ6dfDt6ky5G6YPCSk",5)
 }
   
 private async getUserInfo(token: string): Promise<any> {

@@ -105,29 +105,67 @@ public async withdrawToken(billeteraDelToken:string,to:string,cantidad:number,as
 resolve(false)
 //reject("Insufficient tokens funds")
 }) }
+//public async withdrawRaptoreum(username:string,address:string,amount:number): Promise<string | false> {
+//  return new Promise((resolve, reject) => {
+//      exec(`raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/${username} sendtoaddress "${address}" ${amount}`, { cwd: 'C:/Users/56947/Desktop/raptoreum' }, (error: any, stdout: any, stderr: any) => {
+//        if (error) {
+//          console.error(`Error al ejecutar el comando: ${error.message}`);
+//          return reject(false);
+//        } else if (stderr) {
+//          console.error(`Error en la salida estándar: ${stderr}`);
+//          return reject(false);
+//        } else {
+//            console.log(stdout)
+//          console.log("typeof de stdout:", typeof stdout)
+//          console.log("length de stdout:",stdout.length)
+//          if( stdout.length== 66){
+//            let output=stdout
+//            return resolve(output);
+//          }else if(stdout.includes("Insufficient")){
+//            console.log("rechazando")
+//            return reject("Insufficient raptoreum funds");
+//          }
+//    }});
+//  });
+//}
+
 public async withdrawRaptoreum(username:string,address:string,amount:number): Promise<string | false> {
-  return new Promise((resolve, reject) => {
-  
-      exec(`raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/${username} sendtoaddress "${address}" ${amount}`, { cwd: 'C:/Users/56947/Desktop/raptoreum' }, (error: any, stdout: any, stderr: any) => {
-        if (error) {
-          console.error(`Error al ejecutar el comando: ${error.message}`);
-          return reject(false);
-        } else if (stderr) {
-          console.error(`Error en la salida estándar: ${stderr}`);
-          return reject(false);
-        } else {
-            console.log(stdout)
-          console.log("typeof de stdout:", typeof stdout)
-          console.log("length de stdout:",stdout.length)
-          if( stdout.length== 66){
-            let output=stdout
-            return resolve(output);
-          }else if(stdout.includes("Insufficient")){
-            console.log("rechazando")
-            return reject("Insufficient raptoreum funds");
-          }
-    }});
-    
+  return new Promise(async (resolve, reject) => {
+    try {
+      const rpcUser = 'rodrigo';
+const rpcPassword = '1234'; // Reemplaza con tu contraseña
+const rpcHost = `http://localhost:10225/wallet/${username}`;
+      const requestData: RpcRequest = {
+        jsonrpc: '1.0',
+        id: 'curltest',
+        method: 'sendtoaddress',
+        params: [address, amount],
+      };
+      const response = await axios.post(
+        rpcHost,
+        requestData,
+        {
+          auth: {
+            username: rpcUser,
+            password: rpcPassword,
+          },
+          headers: {
+            'Content-Type': 'text/plain;',
+          },
+        }
+      );
+      if (response) {
+        console.log(response)
+        const accountBalance = parseFloat(response.data.result);
+        return accountBalance;
+      } else {
+
+        throw new Error('Error en el formato de respuesta RPC');
+      }
+    } catch (error:any) {
+      console.error(`Error enviar rtm de la cuenta: ${error.message}`);
+      throw new Error(error);
+    }
   });
 }
     //arrglar esta funcion
