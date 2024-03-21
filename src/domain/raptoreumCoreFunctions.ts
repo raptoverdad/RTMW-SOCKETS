@@ -22,15 +22,17 @@ export class raptoreumCoreAccess {
     }
 
     public async getAccountBalance(usuario: any): Promise<number> {
-      try {
+     
+        return new Promise(async (resolve, reject) => {
+          try {
         const rpcUser = 'rodrigo';
 const rpcPassword = '1234'; // Reemplaza con tu contraseña
-const rpcHost = 'http://localhost:10225/wallet/raptoreumworld';
+const rpcHost = `http://localhost:10225/wallet/${usuario}`;
         const requestData: RpcRequest = {
           jsonrpc: '1.0',
           id: 'curltest',
           method: 'getbalance',
-          params: ['*',6],
+          params: [],
         };
     
         const response = await axios.post(
@@ -50,15 +52,14 @@ const rpcHost = 'http://localhost:10225/wallet/raptoreumworld';
         if (response) {
           console.log(response)
           const accountBalance = parseFloat(response.data.result);
-          return accountBalance;
+          resolve(accountBalance) ;
         } else {
-
-          throw new Error('Error en el formato de respuesta RPC');
+          reject(false)
         }
       } catch (error:any) {
-        console.error(`Error al obtener el saldo de la cuenta: ${error.message}`);
-        throw new Error(error);
+        reject(false)
       }
+      })
     }
 public async getAssetBalance(vendedor:string,addressVendedor:string,assetId:string): Promise<number>{
   return new Promise((resolve, reject) => {
@@ -129,43 +130,52 @@ resolve(false)
 //  });
 //}
 
-public async withdrawRaptoreum(username:string,address:string,amount:number): Promise<string | false> {
+public async withdrawRaptoreum(username:string,address:string,amount:number): Promise<boolean> {
   return new Promise(async (resolve, reject) => {
-    try {
-      const rpcUser = 'rodrigo';
-const rpcPassword = '1234'; // Reemplaza con tu contraseña
-const rpcHost = `http://localhost:10225/wallet/${username}`;
-      const requestData: RpcRequest = {
-        jsonrpc: '1.0',
-        id: 'curltest',
-        method: 'sendtoaddress',
-        params: [address, amount],
-      };
-      const response = await axios.post(
-        rpcHost,
-        requestData,
-        {
-          auth: {
-            username: rpcUser,
-            password: rpcPassword,
-          },
-          headers: {
-            'Content-Type': 'text/plain;',
-          },
-        }
-      );
-      if (response) {
-        console.log(response)
-        const accountBalance = parseFloat(response.data.result);
-        return accountBalance;
-      } else {
 
-        throw new Error('Error en el formato de respuesta RPC');
+      try {
+        let userBalance=await this.getAccountBalance(username)
+        if(userBalance){
+          if(userBalance>amount){
+            const rpcUser = 'rodrigo';
+            const rpcPassword = '1234'; // Reemplaza con tu contraseña
+            const rpcHost = `http://localhost:10225/wallet/${username}`;
+            const requestData: RpcRequest = {
+              jsonrpc: '1.0',
+              id: 'curltest',
+              method: 'sendtoaddress',
+              params: [address, amount],
+            };
+            const response = await axios.post(
+              rpcHost,
+              requestData,
+              {
+                auth: {
+                  username: rpcUser,
+                  password: rpcPassword,
+                },
+                headers: {
+                  'Content-Type': 'text/plain;',
+                },
+              }
+            );
+            if (response) {
+              if(response.data.length==64){
+                resolve(response.data)
+              }
+            } else {
+                reject(false)
+            }
+          }else{
+            reject("notEnoughBalance")
+          }
+        }
+      } catch (error) {
+        reject(false)
       }
-    } catch (error:any) {
-      console.error(`Errorrrrr enviar rtm de la cuenta: ${error}`);
-      throw new Error(error);
-    }
+    
+  
+
   });
 }
     //arrglar esta funcion

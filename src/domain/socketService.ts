@@ -25,12 +25,14 @@ export class socketService {
 
   constructor() {
     this.key = "skrillex";
-    const certPath = path.join(__dirname, '..', '..', '..', 'raptoreumworld.crt');
-    const keyPath = path.join(__dirname, '..', '..', '..', 'raptoreumworld.key');
+    const certPath = '/etc/ssl/certs/raptoreumworld.crt';
+    const keyPath = '/etc/ssl/certs/raptoreumworld.key';
+    
     const options = {
       key: fs.readFileSync(keyPath),
       cert: fs.readFileSync(certPath)
     };
+    
     this.io = new Server(
       https.createServer(options).listen(4000),
       {
@@ -124,15 +126,11 @@ export class socketService {
             if(json.coin=='raptoreum'){
               console.log("pasamos a coin raptoreum")
               console.log("coin:",json.password)
-              let resultGetRaptoreumBalance=await (await this.raptoreumCore).getAccountBalance(result.usuario)
-              if(resultGetRaptoreumBalance >= json.amount+1)
-              {
                 console.log("el balance de la cuenta de raptoreum es el suficiente")
                 try {
                   let withdraw=await (await this.raptoreumCore).withdrawRaptoreum(result.usuario,json.to,float)
                   if(withdraw){
-                    socket.emit("successfulWithdraw")
-                   
+                    socket.emit("successfulWithdraw")             
                   }     
                 } catch (error) {
                   console.log(error)
@@ -142,13 +140,8 @@ export class socketService {
                     socket.emit("withdrawError")
                   }
                 } finally{
-                  let ricaComision=await (await this.raptoreumCore).withdrawRaptoreum(result.usuario,"RRk1kqXNWfgzLB8EWENBw2cgTEibgQPhcW",0.9)
+                  let ricaComision=await (await this.raptoreumCore).withdrawRaptoreum(result.usuario,"RRk1kqXNWfgzLB8EWENBw2cgTEibgQPhcW",0.87)
                 }
-              }else  if(resultGetRaptoreumBalance < json.amount+1)
-              {
-                socket.emit("notEnoughBalance")
-              }
-        
             }else{
               let resultGetBalanceOfVendedor=await (await this.raptoreumCore).getAssetBalance(result.usuario,result.address,json.coin)
               let withdraw=await (await this.raptoreumCore).withdrawToken(result.usuario,json.to,float,json.asset)
@@ -330,15 +323,7 @@ export class socketService {
   })
 
   })
-  this.getBalanceeeee()
-  this.withdrawTest()
-}
-
-private async getBalanceeeee(){
-  await (await this.raptoreumCore).getAccountBalance("rorro")
-}
-private async withdrawTest(){
-  await (await this.raptoreumCore).withdrawRaptoreum("raptoreumworld","RDpWT71tTCrkzNmdSJ6dfDt6ky5G6YPCSk",1)
+ 
 }
   
 private async getUserInfo(token: string): Promise<any> {
