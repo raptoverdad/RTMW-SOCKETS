@@ -163,7 +163,7 @@ const rpcHost = `http://localhost:10225/wallet/${username}`;
         throw new Error('Error en el formato de respuesta RPC');
       }
     } catch (error:any) {
-      console.error(`Error enviar rtm de la cuenta: ${error}`);
+      console.error(`Errorrrrr enviar rtm de la cuenta: ${error}`);
       throw new Error(error);
     }
   });
