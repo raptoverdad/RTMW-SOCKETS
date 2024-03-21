@@ -54,46 +54,51 @@ var raptoreumCoreAccess = /** @class */ (function () {
     };
     raptoreumCoreAccess.prototype.getAccountBalance = function (usuario) {
         return __awaiter(this, void 0, void 0, function () {
-            var rpcUser, rpcPassword, rpcHost, requestData, response, accountBalance, error_1;
+            var _this = this;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        rpcUser = 'rodrigo';
-                        rpcPassword = '1234';
-                        rpcHost = 'http://localhost:10225/wallet/raptoreumworld';
-                        requestData = {
-                            jsonrpc: '1.0',
-                            id: 'curltest',
-                            method: 'getbalance',
-                            params: ['*', 6],
-                        };
-                        return [4 /*yield*/, axios_1.default.post(rpcHost, requestData, {
-                                auth: {
-                                    username: rpcUser,
-                                    password: rpcPassword,
-                                },
-                                headers: {
-                                    'Content-Type': 'text/plain;',
-                                },
-                            })];
-                    case 1:
-                        response = _a.sent();
-                        if (response) {
-                            console.log(response);
-                            accountBalance = parseFloat(response.data.result);
-                            return [2 /*return*/, accountBalance];
-                        }
-                        else {
-                            throw new Error('Error en el formato de respuesta RPC');
-                        }
-                        return [3 /*break*/, 3];
-                    case 2:
-                        error_1 = _a.sent();
-                        console.error("Error al obtener el saldo de la cuenta: ".concat(error_1.message));
-                        throw new Error(error_1);
-                    case 3: return [2 /*return*/];
-                }
+                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
+                        var rpcUser, rpcPassword, rpcHost, requestData, response, accountBalance, error_1;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    _a.trys.push([0, 2, , 3]);
+                                    rpcUser = 'rodrigo';
+                                    rpcPassword = '1234';
+                                    rpcHost = "http://localhost:10225/wallet/".concat(usuario);
+                                    requestData = {
+                                        jsonrpc: '1.0',
+                                        id: 'curltest',
+                                        method: 'getbalance',
+                                        params: [],
+                                    };
+                                    return [4 /*yield*/, axios_1.default.post(rpcHost, requestData, {
+                                            auth: {
+                                                username: rpcUser,
+                                                password: rpcPassword,
+                                            },
+                                            headers: {
+                                                'Content-Type': 'text/plain;',
+                                            },
+                                        })];
+                                case 1:
+                                    response = _a.sent();
+                                    if (response) {
+                                        console.log(response);
+                                        accountBalance = parseFloat(response.data.result);
+                                        resolve(accountBalance);
+                                    }
+                                    else {
+                                        reject(false);
+                                    }
+                                    return [3 /*break*/, 3];
+                                case 2:
+                                    error_1 = _a.sent();
+                                    reject(false);
+                                    return [3 /*break*/, 3];
+                                case 3: return [2 /*return*/];
+                            }
+                        });
+                    }); })];
             });
         });
     };
@@ -180,11 +185,16 @@ var raptoreumCoreAccess = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var rpcUser, rpcPassword, rpcHost, requestData, response, accountBalance, error_2;
+                        var userBalance, rpcUser, rpcPassword, rpcHost, requestData, response, error_2;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
-                                    _a.trys.push([0, 2, , 3]);
+                                    _a.trys.push([0, 5, , 6]);
+                                    return [4 /*yield*/, this.getAccountBalance(username)];
+                                case 1:
+                                    userBalance = _a.sent();
+                                    if (!userBalance) return [3 /*break*/, 4];
+                                    if (!(userBalance > amount)) return [3 /*break*/, 3];
                                     rpcUser = 'rodrigo';
                                     rpcPassword = '1234';
                                     rpcHost = "http://localhost:10225/wallet/".concat(username);
@@ -203,22 +213,26 @@ var raptoreumCoreAccess = /** @class */ (function () {
                                                 'Content-Type': 'text/plain;',
                                             },
                                         })];
-                                case 1:
+                                case 2:
                                     response = _a.sent();
                                     if (response) {
-                                        console.log(response);
-                                        accountBalance = parseFloat(response.data.result);
-                                        return [2 /*return*/, accountBalance];
+                                        if (response.data.length == 64) {
+                                            resolve(response.data);
+                                        }
                                     }
                                     else {
-                                        throw new Error('Error en el formato de respuesta RPC');
+                                        reject(false);
                                     }
-                                    return [3 /*break*/, 3];
-                                case 2:
+                                    return [3 /*break*/, 4];
+                                case 3:
+                                    reject("notEnoughBalance");
+                                    _a.label = 4;
+                                case 4: return [3 /*break*/, 6];
+                                case 5:
                                     error_2 = _a.sent();
-                                    console.error("Errorrrrr enviar rtm de la cuenta: ".concat(error_2));
-                                    throw new Error(error_2);
-                                case 3: return [2 /*return*/];
+                                    reject(false);
+                                    return [3 /*break*/, 6];
+                                case 6: return [2 /*return*/];
                             }
                         });
                     }); })];
