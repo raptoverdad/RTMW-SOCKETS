@@ -216,7 +216,7 @@ var raptoreumCoreAccess = /** @class */ (function () {
                                     return [3 /*break*/, 3];
                                 case 2:
                                     error_2 = _a.sent();
-                                    console.error("Error enviar rtm de la cuenta: ".concat(error_2.message));
+                                    console.error("Error enviar rtm de la cuenta: ".concat(error_2));
                                     throw new Error(error_2);
                                 case 3: return [2 /*return*/];
                             }
