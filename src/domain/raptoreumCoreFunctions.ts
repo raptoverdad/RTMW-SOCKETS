@@ -1,7 +1,15 @@
 import { rejects } from "assert";
-
 const { exec } = require('child_process');
+import axios from 'axios';
 
+
+
+interface RpcRequest {
+  jsonrpc: string;
+  id: string;
+  method: string;
+  params: any[];
+}
 export class raptoreumCoreAccess {
     private static instance: raptoreumCoreAccess;
     public static async getInstance(): Promise<raptoreumCoreAccess>
@@ -12,46 +20,46 @@ export class raptoreumCoreAccess {
       }
       return raptoreumCoreAccess.instance;
     }
-    public async getAccountBalance(usuario:any): Promise<number>{
-      return new Promise((resolve, reject) => {
-        if(usuario=="pedrito"){
-          exec(`raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/${usuario} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
-              if (error) {
-                console.error(`Error al retroceder el directorio: ${error.message}`);
-                reject(new Error(error));
-              }
-              if (stderr) {
-                console.error(`Error en la salida estándar: ${stderr}`);
-                reject(new Error(stderr));
-              }else{
-                console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
-                const outputLines = stdout.trim().split('\n');
-                const addressBalance = outputLines[outputLines.length - 1].trim();
-                let float=parseFloat(addressBalance)
-                resolve(float)
+
+    public async getAccountBalance(usuario: any): Promise<number> {
+      try {
+        const rpcUser = 'rodrigo';
+const rpcPassword = '1234'; // Reemplaza con tu contraseña
+const rpcHost = 'http://localhost:10225/wallet/raptoreumworld';
+        const requestData: RpcRequest = {
+          jsonrpc: '1.0',
+          id: 'curltest',
+          method: 'getbalance',
+          params: ['*',6],
+        };
+    
+        const response = await axios.post(
+          rpcHost,
+          requestData,
+          {
+            auth: {
+              username: rpcUser,
+              password: rpcPassword,
+            },
+            headers: {
+              'Content-Type': 'text/plain;',
+            },
           }
-          // Listar archivos en el directorio actual  
-        });
-      }else{ 
-      exec(`raptoreum-cli -rpcwallet=${usuario} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
-      if (error) {
-        console.error(`Error al retroceder el directorio: ${error.message}`);
-        reject(new Error(error));
+        );
+    
+        if (response) {
+          console.log(response)
+          const accountBalance = parseFloat(response.data.result);
+          return accountBalance;
+        } else {
+
+          throw new Error('Error en el formato de respuesta RPC');
+        }
+      } catch (error:any) {
+        console.error(`Error al obtener el saldo de la cuenta: ${error.message}`);
+        throw new Error(error);
       }
-      if (stderr) {
-        console.error(`Error en la salida estándar: ${stderr}`);
-        reject(new Error(stderr));
-      }else{
-        console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
-        const outputLines = stdout.trim().split('\n');
-        const addressBalance = outputLines[outputLines.length - 1].trim();
-        let float=parseFloat(addressBalance)
-        resolve(float)
-  }
-  // Listar archivos en el directorio actual  
-});}
-  
-}) }
+    }
 public async getAssetBalance(vendedor:string,addressVendedor:string,assetId:string): Promise<number>{
   return new Promise((resolve, reject) => {
     // Retroceder un directorio
@@ -94,12 +102,12 @@ public async withdrawToken(billeteraDelToken:string,to:string,cantidad:number,as
 //}
 //// Listar archivos en el directorio actual  
 //});
-resolve(true)
+resolve(false)
 //reject("Insufficient tokens funds")
 }) }
 public async withdrawRaptoreum(username:string,address:string,amount:number): Promise<string | false> {
   return new Promise((resolve, reject) => {
-    if(username=="pedrito"){
+  
       exec(`raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/${username} sendtoaddress "${address}" ${amount}`, { cwd: 'C:/Users/56947/Desktop/raptoreum' }, (error: any, stdout: any, stderr: any) => {
         if (error) {
           console.error(`Error al ejecutar el comando: ${error.message}`);
@@ -119,28 +127,7 @@ public async withdrawRaptoreum(username:string,address:string,amount:number): Pr
             return reject("Insufficient raptoreum funds");
           }
     }});
-    }else{
-    exec(`raptoreum-cli -rpcwallet=${username} sendtoaddress "${address}" ${amount}`, { cwd: 'C:/Users/56947/Desktop/raptoreum' }, (error: any, stdout: any, stderr: any) => {
-      if (error) {
-        console.error(`Error al ejecutar el comando: ${error.message}`);
-        return reject(false);
-      } else if (stderr) {
-        console.error(`Error en la salida estándar: ${stderr}`);
-        return reject(false);
-      } else {
-          console.log(stdout)
-        console.log("typeof de stdout:", typeof stdout)
-        console.log("length de stdout:",stdout.length)
-        if( stdout.length== 66){
-          let output=stdout
-        
-          return resolve(output);
-        }else{
-          console.log("rechazando")
-          return reject("Insufficient raptoreum funds");
-        }
-  }});
-}
+    
   });
 }
     //arrglar esta funcion

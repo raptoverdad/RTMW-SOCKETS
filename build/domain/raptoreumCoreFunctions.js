@@ -38,6 +38,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.raptoreumCoreAccess = void 0;
 var exec = require('child_process').exec;
+var axios_1 = require("axios");
 var raptoreumCoreAccess = /** @class */ (function () {
     function raptoreumCoreAccess() {
     }
@@ -53,49 +54,46 @@ var raptoreumCoreAccess = /** @class */ (function () {
     };
     raptoreumCoreAccess.prototype.getAccountBalance = function (usuario) {
         return __awaiter(this, void 0, void 0, function () {
+            var rpcUser, rpcPassword, rpcHost, requestData, response, accountBalance, error_1;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) {
-                        if (usuario == "pedrito") {
-                            exec("raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/".concat(usuario, " getbalance"), { cwd: 'C:/Users/56947/Desktop/raptoreum' }, function (error, stdout, stderr) {
-                                if (error) {
-                                    console.error("Error al retroceder el directorio: ".concat(error.message));
-                                    reject(new Error(error));
-                                }
-                                if (stderr) {
-                                    console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
-                                    reject(new Error(stderr));
-                                }
-                                else {
-                                    console.log("Salida GETACCOUNTBALANCE:\n".concat(stdout));
-                                    var outputLines = stdout.trim().split('\n');
-                                    var addressBalance = outputLines[outputLines.length - 1].trim();
-                                    var float = parseFloat(addressBalance);
-                                    resolve(float);
-                                }
-                                // Listar archivos en el directorio actual  
-                            });
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        rpcUser = 'rodrigo';
+                        rpcPassword = '1234';
+                        rpcHost = 'http://localhost:10225/wallet/raptoreumworld';
+                        requestData = {
+                            jsonrpc: '1.0',
+                            id: 'curltest',
+                            method: 'getbalance',
+                            params: ['*', 6],
+                        };
+                        return [4 /*yield*/, axios_1.default.post(rpcHost, requestData, {
+                                auth: {
+                                    username: rpcUser,
+                                    password: rpcPassword,
+                                },
+                                headers: {
+                                    'Content-Type': 'text/plain;',
+                                },
+                            })];
+                    case 1:
+                        response = _a.sent();
+                        if (response) {
+                            console.log(response);
+                            accountBalance = parseFloat(response.data.result);
+                            return [2 /*return*/, accountBalance];
                         }
                         else {
-                            exec("raptoreum-cli -rpcwallet=".concat(usuario, " getbalance"), { cwd: 'C:/Users/56947/Desktop/raptoreum' }, function (error, stdout, stderr) {
-                                if (error) {
-                                    console.error("Error al retroceder el directorio: ".concat(error.message));
-                                    reject(new Error(error));
-                                }
-                                if (stderr) {
-                                    console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
-                                    reject(new Error(stderr));
-                                }
-                                else {
-                                    console.log("Salida GETACCOUNTBALANCE:\n".concat(stdout));
-                                    var outputLines = stdout.trim().split('\n');
-                                    var addressBalance = outputLines[outputLines.length - 1].trim();
-                                    var float = parseFloat(addressBalance);
-                                    resolve(float);
-                                }
-                                // Listar archivos en el directorio actual  
-                            });
+                            throw new Error('Error en el formato de respuesta RPC');
                         }
-                    })];
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_1 = _a.sent();
+                        console.error("Error al obtener el saldo de la cuenta: ".concat(error_1.message));
+                        throw new Error(error_1);
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     };
@@ -148,7 +146,7 @@ var raptoreumCoreAccess = /** @class */ (function () {
                         //}
                         //// Listar archivos en el directorio actual  
                         //});
-                        resolve(true);
+                        resolve(false);
                         //reject("Insufficient tokens funds")
                     })];
             });
@@ -158,56 +156,29 @@ var raptoreumCoreAccess = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
-                        if (username == "pedrito") {
-                            exec("raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/".concat(username, " sendtoaddress \"").concat(address, "\" ").concat(amount), { cwd: 'C:/Users/56947/Desktop/raptoreum' }, function (error, stdout, stderr) {
-                                if (error) {
-                                    console.error("Error al ejecutar el comando: ".concat(error.message));
-                                    return reject(false);
+                        exec("raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/".concat(username, " sendtoaddress \"").concat(address, "\" ").concat(amount), { cwd: 'C:/Users/56947/Desktop/raptoreum' }, function (error, stdout, stderr) {
+                            if (error) {
+                                console.error("Error al ejecutar el comando: ".concat(error.message));
+                                return reject(false);
+                            }
+                            else if (stderr) {
+                                console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
+                                return reject(false);
+                            }
+                            else {
+                                console.log(stdout);
+                                console.log("typeof de stdout:", typeof stdout);
+                                console.log("length de stdout:", stdout.length);
+                                if (stdout.length == 66) {
+                                    var output = stdout;
+                                    return resolve(output);
                                 }
-                                else if (stderr) {
-                                    console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
-                                    return reject(false);
+                                else if (stdout.includes("Insufficient")) {
+                                    console.log("rechazando");
+                                    return reject("Insufficient raptoreum funds");
                                 }
-                                else {
-                                    console.log(stdout);
-                                    console.log("typeof de stdout:", typeof stdout);
-                                    console.log("length de stdout:", stdout.length);
-                                    if (stdout.length == 66) {
-                                        var output = stdout;
-                                        return resolve(output);
-                                    }
-                                    else if (stdout.includes("Insufficient")) {
-                                        console.log("rechazando");
-                                        return reject("Insufficient raptoreum funds");
-                                    }
-                                }
-                            });
-                        }
-                        else {
-                            exec("raptoreum-cli -rpcwallet=".concat(username, " sendtoaddress \"").concat(address, "\" ").concat(amount), { cwd: 'C:/Users/56947/Desktop/raptoreum' }, function (error, stdout, stderr) {
-                                if (error) {
-                                    console.error("Error al ejecutar el comando: ".concat(error.message));
-                                    return reject(false);
-                                }
-                                else if (stderr) {
-                                    console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
-                                    return reject(false);
-                                }
-                                else {
-                                    console.log(stdout);
-                                    console.log("typeof de stdout:", typeof stdout);
-                                    console.log("length de stdout:", stdout.length);
-                                    if (stdout.length == 66) {
-                                        var output = stdout;
-                                        return resolve(output);
-                                    }
-                                    else {
-                                        console.log("rechazando");
-                                        return reject("Insufficient raptoreum funds");
-                                    }
-                                }
-                            });
-                        }
+                            }
+                        });
                     })];
             });
         });

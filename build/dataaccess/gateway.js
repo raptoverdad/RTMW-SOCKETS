@@ -45,6 +45,7 @@ var UserGateway = /** @class */ (function () {
         this.pool = null;
         this.db = null;
         this.assetsEnVentaCollection = null;
+        this.volatileUserDataCollection = null;
         this.assetsCollection = null;
     }
     UserGateway.getInstance = function () {
@@ -70,7 +71,7 @@ var UserGateway = /** @class */ (function () {
             var result, transactionsBlocked;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0: return [4 /*yield*/, ((_a = this.assetsEnVentaCollection) === null || _a === void 0 ? void 0 : _a.find({ usuario: user }).toArray())];
+                    case 0: return [4 /*yield*/, ((_a = this.volatileUserDataCollection) === null || _a === void 0 ? void 0 : _a.find({ usuario: user }).toArray())];
                     case 1:
                         result = _b.sent();
                         if (result) {
@@ -95,7 +96,7 @@ var UserGateway = /** @class */ (function () {
                 switch (_c.label) {
                     case 0:
                         if (!(type == 'block')) return [3 /*break*/, 2];
-                        return [4 /*yield*/, ((_a = this.assetsEnVentaCollection) === null || _a === void 0 ? void 0 : _a.updateOne({ usuario: user }, // Filtro para encontrar el documento
+                        return [4 /*yield*/, ((_a = this.volatileUserDataCollection) === null || _a === void 0 ? void 0 : _a.updateOne({ usuario: user }, // Filtro para encontrar el documento
                             { $set: { transactionsBlocked: true } } // Actualización del campo 'user'
                             ))];
                     case 1:
@@ -111,7 +112,7 @@ var UserGateway = /** @class */ (function () {
                         return [3 /*break*/, 4];
                     case 2:
                         if (!(type == 'unblock')) return [3 /*break*/, 4];
-                        return [4 /*yield*/, ((_b = this.assetsEnVentaCollection) === null || _b === void 0 ? void 0 : _b.updateOne({ usuario: user }, // Filtro para encontrar el documento
+                        return [4 /*yield*/, ((_b = this.volatileUserDataCollection) === null || _b === void 0 ? void 0 : _b.updateOne({ usuario: user }, // Filtro para encontrar el documento
                             { $set: { transactionsBlocked: false } } // Actualización del campo 'user'
                             ))];
                     case 3:
@@ -171,25 +172,26 @@ var UserGateway = /** @class */ (function () {
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
-                                    if (!this.pool) return [3 /*break*/, 3];
+                                    if (!this.pool) return [3 /*break*/, 5];
                                     return [4 /*yield*/, this.pool];
                                 case 1: return [4 /*yield*/, (_a.sent()).execute("SELECT usuario,contrasena FROM users WHERE usuario = ?", [usuario])];
                                 case 2:
                                     result = (_a.sent())[0];
-                                    if (result) {
-                                        passwordMatch = brcryptjs.compareSync(contrasena, result.contrasena);
-                                        if (passwordMatch) {
-                                            resolve(true);
-                                        }
-                                        else {
-                                            reject(false);
-                                        }
+                                    if (!result) return [3 /*break*/, 4];
+                                    return [4 /*yield*/, brcryptjs.compareSync(contrasena, result[0].contrasena)];
+                                case 3:
+                                    passwordMatch = _a.sent();
+                                    if (passwordMatch) {
+                                        resolve(true);
                                     }
                                     else {
                                         reject(false);
                                     }
-                                    _a.label = 3;
-                                case 3: return [2 /*return*/];
+                                    return [3 /*break*/, 5];
+                                case 4:
+                                    reject(false);
+                                    _a.label = 5;
+                                case 5: return [2 /*return*/];
                             }
                         });
                     }); })];
@@ -388,8 +390,8 @@ var UserGateway = /** @class */ (function () {
                         _a = this;
                         return [4 /*yield*/, mysql.createPool({
                                 host: "localhost",
-                                user: "root",
-                                password: "1234",
+                                user: "raptoreumworld",
+                                password: "Bnx6aw300172_",
                                 database: "raptoreumworld",
                             })];
                     case 3:
@@ -402,6 +404,7 @@ var UserGateway = /** @class */ (function () {
                         this.db = client.db('raptoreumworld');
                         this.assetsCollection = this.db.collection('assets');
                         this.assetsEnVentaCollection = this.db.collection('assetsEnVenta');
+                        this.volatileUserDataCollection = this.db.collection('volatileUserData');
                         console.log('Connected to MongoDB');
                         connected = true; // Establecemos la conexión con éxito
                         return [3 /*break*/, 7];

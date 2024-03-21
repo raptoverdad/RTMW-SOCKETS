@@ -13,11 +13,13 @@ export class UserGateway {
   private db: Db | null;
   private assetsCollection: Collection<any> | null;
   private assetsEnVentaCollection:Collection<any> | null;
+  private volatileUserDataCollection:Collection<any> | null
 
   private constructor() {
     this.pool = null;
     this.db = null;
     this.assetsEnVentaCollection= null
+    this.volatileUserDataCollection=null
     this.assetsCollection = null;
   }
 
@@ -30,7 +32,7 @@ export class UserGateway {
     return UserGateway.instance;
   }
   public async verifyAccountBlocked(user:string): Promise<boolean | undefined>{
-    const result= await  this.assetsEnVentaCollection?.find({usuario:user}).toArray();
+    const result= await  this.volatileUserDataCollection?.find({usuario:user}).toArray();
     if(result){
       let transactionsBlocked=result[0].transactionsBlocked
       if(transactionsBlocked==true){
@@ -42,7 +44,7 @@ export class UserGateway {
   }
   public async blockOrUnblockUserTransactions(user:string,type:string): Promise<boolean | undefined>{
     if(type=='block'){
-      const resultado = await  this.assetsEnVentaCollection?.updateOne(
+      const resultado = await  this.volatileUserDataCollection?.updateOne(
         { usuario: user }, // Filtro para encontrar el documento
          { $set: { transactionsBlocked: true } } // Actualización del campo 'user'
       );
@@ -55,7 +57,7 @@ export class UserGateway {
       }
 
     }else if(type=='unblock'){
-      const resultado = await  this.assetsEnVentaCollection?.updateOne(
+      const resultado = await  this.volatileUserDataCollection?.updateOne(
         { usuario: user }, // Filtro para encontrar el documento
          { $set: { transactionsBlocked: false } } // Actualización del campo 'user'
       );
@@ -103,8 +105,7 @@ export class UserGateway {
         let [result]: any = await (await this.pool).execute("SELECT usuario,contrasena FROM users WHERE usuario = ?", [usuario]);
   
         if (result) {
-          // Verifica que la contraseña ingresada coincida con la almacenada en la base de datos
-          const passwordMatch = brcryptjs.compareSync(contrasena, result.contrasena);
+          const passwordMatch =await brcryptjs.compareSync(contrasena, result[0].contrasena);
           if (passwordMatch) {
             resolve(true);
           } else {
@@ -225,8 +226,8 @@ export class UserGateway {
       try {
         this.pool = await mysql.createPool({
           host:"localhost",
-          user: "root",
-          password: "1234",
+          user: "raptoreumworld",
+          password: "Bnx6aw300172_",
           database: "raptoreumworld",
         });
         console.log("connected to database")
@@ -235,6 +236,7 @@ export class UserGateway {
         this.db = client.db('raptoreumworld');
         this.assetsCollection = this.db.collection('assets');
         this.assetsEnVentaCollection = this.db.collection('assetsEnVenta');
+        this.volatileUserDataCollection=this.db.collection('volatileUserData');
         console.log('Connected to MongoDB');
         connected = true; // Establecemos la conexión con éxito
       } catch (error) {

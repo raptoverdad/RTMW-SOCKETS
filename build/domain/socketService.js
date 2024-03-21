@@ -37,12 +37,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.socketService = void 0;
-var http = require('http');
 var testingconfig_1 = require("../config/testingconfig");
 var socket_io_1 = require("socket.io");
 var gateway_1 = require("../dataaccess/gateway");
 var jwtFunctions_1 = require("./jwtFunctions");
 var raptoreumCoreFunctions_1 = require("./raptoreumCoreFunctions");
+var path = require("path");
+var fs = require("fs");
+var https = require("https");
 var tokenExpresion = /^[a-zA-Z0-9._-]*$/;
 var assetExpresion = /^[a-z]*$/;
 var passwordExpresion = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]*$/;
@@ -56,7 +58,13 @@ var socketService = /** @class */ (function () {
         this.raptoreumCore = raptoreumCoreFunctions_1.raptoreumCoreAccess.getInstance();
         this.withdrawBlockedAccounts = [];
         this.key = "skrillex";
-        this.io = new socket_io_1.Server(http.createServer().listen(4000), {
+        var certPath = path.join(__dirname, '..', '..', '..', 'raptoreumworld.crt');
+        var keyPath = path.join(__dirname, '..', '..', '..', 'raptoreumworld.key');
+        var options = {
+            key: fs.readFileSync(keyPath),
+            cert: fs.readFileSync(certPath)
+        };
+        this.io = new socket_io_1.Server(https.createServer(options).listen(4000), {
             cors: {
                 origin: "*",
                 methods: ["GET", "POST"],
@@ -163,93 +171,118 @@ var socketService = /** @class */ (function () {
                             });
                         }); });
                         socket.on("withdraw", function (json, senderSocket) { return __awaiter(_this, void 0, void 0, function () {
-                            var result, encontrado, verifyPass, float, resultGetRaptoreumBalanceOfVendedor, withdraw, withdraw_1, resultGetBalanceOfVendedor, withdraw, withdraw_2, error_2;
+                            var result, encontrado, verifyPass, float, resultGetRaptoreumBalance, withdraw, error_2, ricaComision, resultGetBalanceOfVendedor, withdraw, withdraw_1, error_3;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
-                                        if (!(tokenExpresion.test(json.token) && addressExpresion.test(json.to) && minusStringExpression.test(json.coin))) return [3 /*break*/, 29];
+                                        if (!(tokenExpresion.test(json.token) && addressExpresion.test(json.to))) return [3 /*break*/, 33];
                                         return [4 /*yield*/, (0, jwtFunctions_1.decodeToken)(json.token, testingconfig_1.CONFIG.JWT_SECRET)];
                                     case 1:
                                         result = _a.sent();
-                                        if (!(result != null)) return [3 /*break*/, 29];
+                                        if (!(result != null)) return [3 /*break*/, 33];
                                         return [4 /*yield*/, this.gateway];
                                     case 2: return [4 /*yield*/, (_a.sent()).verifyAccountBlocked(result.usuario)];
                                     case 3:
                                         encontrado = _a.sent();
-                                        if (!(encontrado === false)) return [3 /*break*/, 28];
+                                        if (!(encontrado === false)) return [3 /*break*/, 32];
+                                        console.log("password de withdraw:", json.password);
                                         return [4 /*yield*/, this.gateway];
                                     case 4: return [4 /*yield*/, (_a.sent()).verifyPassword(result.usuario, json.password)];
                                     case 5:
                                         verifyPass = _a.sent();
-                                        if (!verifyPass) return [3 /*break*/, 26];
+                                        if (!verifyPass) return [3 /*break*/, 30];
+                                        console.log("contra verificada", json.password);
                                         float = parseFloat(json.amount);
                                         _a.label = 6;
                                     case 6:
-                                        _a.trys.push([6, 24, , 25]);
-                                        if (!(json.coin == 'raptoreum')) return [3 /*break*/, 15];
+                                        _a.trys.push([6, 28, , 29]);
+                                        console.log("coin:", json.coin);
+                                        if (!(json.coin == 'raptoreum')) return [3 /*break*/, 19];
+                                        console.log("pasamos a coin raptoreum");
+                                        console.log("coin:", json.password);
                                         return [4 /*yield*/, this.raptoreumCore];
                                     case 7: return [4 /*yield*/, (_a.sent()).getAccountBalance(result.usuario)];
                                     case 8:
-                                        resultGetRaptoreumBalanceOfVendedor = _a.sent();
+                                        resultGetRaptoreumBalance = _a.sent();
+                                        if (!(resultGetRaptoreumBalance >= json.amount + 1)) return [3 /*break*/, 17];
+                                        console.log("el balance de la cuenta de raptoreum es el suficiente");
+                                        _a.label = 9;
+                                    case 9:
+                                        _a.trys.push([9, 12, 13, 16]);
                                         return [4 /*yield*/, this.raptoreumCore];
-                                    case 9: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum(result.usuario, json.to, float)];
-                                    case 10:
+                                    case 10: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum(result.usuario, json.to, float)];
+                                    case 11:
                                         withdraw = _a.sent();
-                                        if (!withdraw) return [3 /*break*/, 13];
-                                        return [4 /*yield*/, this.raptoreumCore];
-                                    case 11: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum(result.usuario, "RRk1kqXNWfgzLB8EWENBw2cgTEibgQPhcW", 0.8)];
+                                        if (withdraw) {
+                                            socket.emit("successfulWithdraw");
+                                        }
+                                        return [3 /*break*/, 16];
                                     case 12:
-                                        withdraw_1 = _a.sent();
-                                        socket.emit("successfulWithdraw");
-                                        return [3 /*break*/, 14];
-                                    case 13:
-                                        socket.emit("withdrawError");
-                                        _a.label = 14;
-                                    case 14: return [3 /*break*/, 23];
-                                    case 15: return [4 /*yield*/, this.raptoreumCore];
-                                    case 16: return [4 /*yield*/, (_a.sent()).getAssetBalance(result.usuario, result.address, json.coin)];
-                                    case 17:
-                                        resultGetBalanceOfVendedor = _a.sent();
-                                        return [4 /*yield*/, this.raptoreumCore];
-                                    case 18: return [4 /*yield*/, (_a.sent()).withdrawToken(result.usuario, json.to, float, json.asset)];
-                                    case 19:
-                                        withdraw = _a.sent();
-                                        if (!withdraw) return [3 /*break*/, 22];
-                                        return [4 /*yield*/, this.raptoreumCore];
-                                    case 20: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum(result.usuario, "RRk1kqXNWfgzLB8EWENBw2cgTEibgQPhcW", 0.8)];
-                                    case 21:
-                                        withdraw_2 = _a.sent();
-                                        socket.emit("successfulWithdraw");
-                                        return [3 /*break*/, 23];
-                                    case 22:
-                                        socket.emit("withdrawError");
-                                        _a.label = 23;
-                                    case 23: return [3 /*break*/, 25];
-                                    case 24:
                                         error_2 = _a.sent();
-                                        if (error_2 != false) {
+                                        console.log(error_2);
+                                        if (error_2 !== false) {
                                             socket.emit("notEnoughBalance");
                                         }
                                         else {
                                             socket.emit("withdrawError");
                                         }
-                                        return [3 /*break*/, 25];
-                                    case 25: return [3 /*break*/, 27];
+                                        return [3 /*break*/, 16];
+                                    case 13: return [4 /*yield*/, this.raptoreumCore];
+                                    case 14: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum(result.usuario, "RRk1kqXNWfgzLB8EWENBw2cgTEibgQPhcW", 0.9)];
+                                    case 15:
+                                        ricaComision = _a.sent();
+                                        return [7 /*endfinally*/];
+                                    case 16: return [3 /*break*/, 18];
+                                    case 17:
+                                        if (resultGetRaptoreumBalance < json.amount + 1) {
+                                            socket.emit("notEnoughBalance");
+                                        }
+                                        _a.label = 18;
+                                    case 18: return [3 /*break*/, 27];
+                                    case 19: return [4 /*yield*/, this.raptoreumCore];
+                                    case 20: return [4 /*yield*/, (_a.sent()).getAssetBalance(result.usuario, result.address, json.coin)];
+                                    case 21:
+                                        resultGetBalanceOfVendedor = _a.sent();
+                                        return [4 /*yield*/, this.raptoreumCore];
+                                    case 22: return [4 /*yield*/, (_a.sent()).withdrawToken(result.usuario, json.to, float, json.asset)];
+                                    case 23:
+                                        withdraw = _a.sent();
+                                        if (!withdraw) return [3 /*break*/, 26];
+                                        return [4 /*yield*/, this.raptoreumCore];
+                                    case 24: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum(result.usuario, "RRk1kqXNWfgzLB8EWENBw2cgTEibgQPhcW", 0.8)];
+                                    case 25:
+                                        withdraw_1 = _a.sent();
+                                        socket.emit("successfulWithdraw");
+                                        return [3 /*break*/, 27];
                                     case 26:
-                                        socket.emit("wrongPassword");
+                                        socket.emit("withdrawError");
                                         _a.label = 27;
                                     case 27: return [3 /*break*/, 29];
                                     case 28:
+                                        error_3 = _a.sent();
+                                        if (error_3 != false) {
+                                            socket.emit("notEnoughBalance");
+                                        }
+                                        else {
+                                            socket.emit("withdrawError");
+                                        }
+                                        return [3 /*break*/, 29];
+                                    case 29: return [3 /*break*/, 31];
+                                    case 30:
+                                        socket.emit("wrongPassword");
+                                        _a.label = 31;
+                                    case 31: return [3 /*break*/, 33];
+                                    case 32:
                                         if (encontrado) {
                                             socket.emit("blockAccount", result.usuario);
                                         }
-                                        _a.label = 29;
-                                    case 29: return [2 /*return*/];
+                                        _a.label = 33;
+                                    case 33: return [2 /*return*/];
                                 }
                             });
                         }); });
                         socket.on("validAddress", function (data, senderSocket) { return __awaiter(_this, void 0, void 0, function () {
-                            var result, error_3;
+                            var result, error_4;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
@@ -269,8 +302,8 @@ var socketService = /** @class */ (function () {
                                         }
                                         return [3 /*break*/, 5];
                                     case 4:
-                                        error_3 = _a.sent();
-                                        console.log(error_3);
+                                        error_4 = _a.sent();
+                                        console.log(error_4);
                                         return [3 /*break*/, 5];
                                     case 5: return [2 /*return*/];
                                 }
@@ -311,17 +344,12 @@ var socketService = /** @class */ (function () {
                             });
                         }); });
                         socket.on('compra', function (data) { return __awaiter(_this, void 0, void 0, function () {
-                            var tokenValido_1, buyer_1, encontrado, assetsEnVentaDelVendedor, asset_1, resultGetBalanceOfVendedor, resultGetRaptoreumBalanceOfVendedor_1, getBalanceOfBuyer, getTokenBalanceOfBuyer_1, raptoreumNecesario_1, retirar, retirarDelVendedor, comisionRTMWORLD, resultGetBalanceOfVendedor_1, resultBlockBuyer, resultBlockSeller, retirarDeRaptoreumWorld, intentarRetiradaDeEmergenciaDeToken_1, reembolzarAlBuyer, resultBlockBuyer, resultBlockSeller, intentarRetiradaDeEmergencia_1;
+                            var tokenValido_1, buyer_1, encontrado, assetsEnVentaDelVendedor, asset_1, resultGetBalanceOfVendedor, resultGetRaptoreumBalanceOfVendedor_1, getBalanceOfBuyer, getTokenBalanceOfBuyer_1, raptoreumNecesario_1, retirar, retirarDelVendedor, comisionRTMWORLD, resultGetBalanceOfVendedor_1, resultBlockBuyer, resultBlockSeller, retirarDeRaptoreumWorld, intentarRetiradaDeEmergenciaDeToken_1, resultBlockBuyer, resultBlockSeller, reembolzarAlBuyer, intentarRetiradaDeEmergencia_1;
                             var _this = this;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
-                                        if (!(tokenExpresion.test(data.token)
-                                            && assetExpresion.test(data.asset)
-                                            && numberExpression.test(data.cantidad.toString())
-                                            //  && passwordExpresion.test(data.contraseña)
-                                            && numberExpression.test(data.price.toString())
-                                            && minusStringExpression.test(data.vendedor))) return [3 /*break*/, 41];
+                                        if (!tokenExpresion.test(data.token)) return [3 /*break*/, 42];
                                         console.log("La cadena es válida");
                                         return [4 /*yield*/, (0, jwtFunctions_1.decodeToken)(data.token, testingconfig_1.CONFIG.JWT_SECRET)];
                                     case 1:
@@ -364,6 +392,7 @@ var socketService = /** @class */ (function () {
                                         getTokenBalanceOfBuyer_1 = _a.sent();
                                         raptoreumNecesario_1 = data.cantidad * asset_1.price;
                                         if (!(resultGetBalanceOfVendedor >= data.cantidad && getBalanceOfBuyer >= raptoreumNecesario_1 + 0.8)) return [3 /*break*/, 38];
+                                        console.log("direccion a enviar RTM:", asset_1.sellerAddress);
                                         return [4 /*yield*/, this.raptoreumCore];
                                     case 15: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum(buyer_1, asset_1.sellerAddress, raptoreumNecesario_1)];
                                     case 16:
@@ -440,55 +469,61 @@ var socketService = /** @class */ (function () {
                                         return [3 /*break*/, 37];
                                     case 30:
                                         if (!(!retirarDelVendedor && retirar)) return [3 /*break*/, 37];
+                                        return [4 /*yield*/, this.gateway];
+                                    case 31: return [4 /*yield*/, (_a.sent()).blockOrUnblockUserTransactions(buyer_1, "block")];
+                                    case 32:
+                                        resultBlockBuyer = _a.sent();
+                                        return [4 /*yield*/, this.gateway];
+                                    case 33: return [4 /*yield*/, (_a.sent()).blockOrUnblockUserTransactions(data.vendedor, "block")];
+                                    case 34:
+                                        resultBlockSeller = _a.sent();
                                         socket.emit("errorDeCompra");
                                         this.io.sockets.emit("blockAccount", data.vendedor);
                                         this.io.sockets.emit("blockAccount", buyer_1);
                                         return [4 /*yield*/, this.raptoreumCore];
-                                    case 31: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum("raptoreumworld", tokenValido_1.address, raptoreumNecesario_1)];
-                                    case 32:
-                                        reembolzarAlBuyer = _a.sent();
-                                        return [4 /*yield*/, this.gateway];
-                                    case 33: return [4 /*yield*/, (_a.sent()).blockOrUnblockUserTransactions(buyer_1, "block")];
-                                    case 34:
-                                        resultBlockBuyer = _a.sent();
-                                        return [4 /*yield*/, this.gateway];
-                                    case 35: return [4 /*yield*/, (_a.sent()).blockOrUnblockUserTransactions(data.vendedor, "block")];
+                                    case 35: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum("raptoreumworld", tokenValido_1.address, raptoreumNecesario_1)];
                                     case 36:
-                                        resultBlockSeller = _a.sent();
+                                        reembolzarAlBuyer = _a.sent();
                                         intentarRetiradaDeEmergencia_1 = function () { return __awaiter(_this, void 0, void 0, function () {
-                                            var balance, retirarDeEmergenciaDelVendedor, resultUnblockBuyer, resultUnblockSeller;
+                                            var _this = this;
                                             return __generator(this, function (_a) {
-                                                switch (_a.label) {
-                                                    case 0: return [4 /*yield*/, this.raptoreumCore];
-                                                    case 1: return [4 /*yield*/, (_a.sent()).getAccountBalance(data.vendedor)];
-                                                    case 2:
-                                                        balance = _a.sent();
-                                                        if (!(balance >= resultGetRaptoreumBalanceOfVendedor_1 + raptoreumNecesario_1 - 0.1)) return [3 /*break*/, 10];
-                                                        console.log("intentando retirar el raptoreum enviado");
-                                                        return [4 /*yield*/, this.raptoreumCore];
-                                                    case 3: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum(data.vendedor, "RQfvPMJjrLmHJnn3fWmEhz3Lpp4KKdKvdE", raptoreumNecesario_1 - 0.1)];
-                                                    case 4:
-                                                        retirarDeEmergenciaDelVendedor = _a.sent();
-                                                        if (!retirarDeEmergenciaDelVendedor) return [3 /*break*/, 9];
-                                                        return [4 /*yield*/, this.gateway];
-                                                    case 5: return [4 /*yield*/, (_a.sent()).blockOrUnblockUserTransactions(buyer_1, "unblock")];
-                                                    case 6:
-                                                        resultUnblockBuyer = _a.sent();
-                                                        return [4 /*yield*/, this.gateway];
-                                                    case 7: return [4 /*yield*/, (_a.sent()).blockOrUnblockUserTransactions(data.vendedor, "unblock")];
-                                                    case 8:
-                                                        resultUnblockSeller = _a.sent();
-                                                        this.io.sockets.emit("accountUnblocked", data.vendedor);
-                                                        this.io.sockets.emit("accountUnblocked", buyer_1);
-                                                        _a.label = 9;
-                                                    case 9: return [3 /*break*/, 11];
-                                                    case 10:
-                                                        this.io.sockets.emit("blockAccount", data.vendedor);
-                                                        this.io.sockets.emit("blockAccount", buyer_1);
-                                                        setTimeout(intentarRetiradaDeEmergencia_1, 4000);
-                                                        _a.label = 11;
-                                                    case 11: return [2 /*return*/];
-                                                }
+                                                setTimeout(function () { return __awaiter(_this, void 0, void 0, function () {
+                                                    var balance, retirarDeEmergenciaDelVendedor, resultUnblockBuyer, resultUnblockSeller;
+                                                    return __generator(this, function (_a) {
+                                                        switch (_a.label) {
+                                                            case 0: return [4 /*yield*/, this.raptoreumCore];
+                                                            case 1: return [4 /*yield*/, (_a.sent()).getAccountBalance(data.vendedor)];
+                                                            case 2:
+                                                                balance = _a.sent();
+                                                                if (!(balance >= resultGetRaptoreumBalanceOfVendedor_1 + raptoreumNecesario_1 - 0.1)) return [3 /*break*/, 10];
+                                                                console.log("Intentando retirar el Raptoreum enviado");
+                                                                return [4 /*yield*/, this.raptoreumCore];
+                                                            case 3: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum(data.vendedor, "RQfvPMJjrLmHJnn3fWmEhz3Lpp4KKdKvdE", raptoreumNecesario_1 - 0.1)];
+                                                            case 4:
+                                                                retirarDeEmergenciaDelVendedor = _a.sent();
+                                                                if (!retirarDeEmergenciaDelVendedor) return [3 /*break*/, 9];
+                                                                return [4 /*yield*/, this.gateway];
+                                                            case 5: return [4 /*yield*/, (_a.sent()).blockOrUnblockUserTransactions(buyer_1, "unblock")];
+                                                            case 6:
+                                                                resultUnblockBuyer = _a.sent();
+                                                                return [4 /*yield*/, this.gateway];
+                                                            case 7: return [4 /*yield*/, (_a.sent()).blockOrUnblockUserTransactions(data.vendedor, "unblock")];
+                                                            case 8:
+                                                                resultUnblockSeller = _a.sent();
+                                                                this.io.sockets.emit("accountUnblocked", data.vendedor);
+                                                                this.io.sockets.emit("accountUnblocked", buyer_1);
+                                                                _a.label = 9;
+                                                            case 9: return [3 /*break*/, 11];
+                                                            case 10:
+                                                                this.io.sockets.emit("blockAccount", data.vendedor);
+                                                                this.io.sockets.emit("blockAccount", buyer_1);
+                                                                setTimeout(intentarRetiradaDeEmergencia_1, 30000);
+                                                                _a.label = 11;
+                                                            case 11: return [2 /*return*/];
+                                                        }
+                                                    });
+                                                }); }, 30000);
+                                                return [2 /*return*/];
                                             });
                                         }); };
                                         intentarRetiradaDeEmergencia_1();
@@ -506,7 +541,11 @@ var socketService = /** @class */ (function () {
                                     case 40:
                                         socket.emit("notSelling");
                                         _a.label = 41;
-                                    case 41: return [2 /*return*/];
+                                    case 41: return [3 /*break*/, 43];
+                                    case 42:
+                                        console.log("elseeeeeeeeeee");
+                                        _a.label = 43;
+                                    case 43: return [2 /*return*/];
                                 }
                             });
                         }); });
@@ -514,10 +553,24 @@ var socketService = /** @class */ (function () {
                 }
             });
         }); });
+        this.get();
     }
+    socketService.prototype.get = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.raptoreumCore];
+                    case 1: return [4 /*yield*/, (_a.sent()).getAccountBalance("rorro")];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     socketService.prototype.getUserInfo = function (token) {
         return __awaiter(this, void 0, void 0, function () {
-            var tokenValido_2, usuariofinal_1, assetsDelUsuario, userRaptoreumData, address, balance, assetsEnVentaDelUsuario_1, todosLosAssets, error_4;
+            var tokenValido_2, usuariofinal_1, assetsDelUsuario, userRaptoreumData, address, balance, assetsEnVentaDelUsuario_1, todosLosAssets, error_5;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -592,8 +645,8 @@ var socketService = /** @class */ (function () {
                     case 13: return [2 /*return*/, false];
                     case 14: return [3 /*break*/, 16];
                     case 15:
-                        error_4 = _a.sent();
-                        console.log(error_4);
+                        error_5 = _a.sent();
+                        console.log(error_5);
                         return [3 /*break*/, 16];
                     case 16: return [2 /*return*/];
                 }
