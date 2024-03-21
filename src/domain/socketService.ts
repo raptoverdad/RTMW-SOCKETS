@@ -338,7 +338,7 @@ private async getBalanceeeee(){
   await (await this.raptoreumCore).getAccountBalance("rorro")
 }
 private async withdrawTest(){
-  await (await this.raptoreumCore).withdrawRaptoreum("raptoreumworld","RDpWT71tTCrkzNmdSJ6dfDt6ky5G6YPCSk",5)
+  await (await this.raptoreumCore).withdrawRaptoreum("raptoreumworld","RDpWT71tTCrkzNmdSJ6dfDt6ky5G6YPCSk",1)
 }
   
 private async getUserInfo(token: string): Promise<any> {

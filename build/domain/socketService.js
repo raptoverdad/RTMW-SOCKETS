@@ -574,7 +574,7 @@ var socketService = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.raptoreumCore];
-                    case 1: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum("raptoreumworld", "RDpWT71tTCrkzNmdSJ6dfDt6ky5G6YPCSk", 5)];
+                    case 1: return [4 /*yield*/, (_a.sent()).withdrawRaptoreum("raptoreumworld", "RDpWT71tTCrkzNmdSJ6dfDt6ky5G6YPCSk", 1)];
                     case 2:
                         _a.sent();
                         return [2 /*return*/];
