@@ -25,8 +25,9 @@ export class socketService {
 
   constructor() {
     this.key = "skrillex";
-    const certPath = '/etc/ssl/certs/raptoreumworld.crt';
-    const keyPath = '/etc/ssl/certs/raptoreumworld.key';
+    const certPath = '/etc/ssl/certs/raptoreumworld.ddns.net+1.pem';
+    const keyPath = '/etc/ssl/certs/raptoreumworld.ddns.net+1-key.pem';
+    
     
     const options = {
       key: fs.readFileSync(keyPath),

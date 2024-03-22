@@ -57,8 +57,8 @@ var socketService = /** @class */ (function () {
         this.raptoreumCore = raptoreumCoreFunctions_1.raptoreumCoreAccess.getInstance();
         this.withdrawBlockedAccounts = [];
         this.key = "skrillex";
-        var certPath = '/etc/ssl/certs/raptoreumworld.crt';
-        var keyPath = '/etc/ssl/certs/raptoreumworld.key';
+        var certPath = '/etc/ssl/certs/raptoreumworld.ddns.net+1.pem';
+        var keyPath = '/etc/ssl/certs/raptoreumworld.ddns.net+1-key.pem';
         var options = {
             key: fs.readFileSync(keyPath),
             cert: fs.readFileSync(certPath)
