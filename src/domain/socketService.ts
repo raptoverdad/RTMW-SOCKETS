@@ -5,7 +5,7 @@ import { decodeToken } from './jwtFunctions';
 import { raptoreumCoreAccess} from './raptoreumCoreFunctions'
 import * as path from 'path';
 import * as fs from 'fs';
-import * as https from 'https';
+import * as http from 'http';
 
 const tokenExpresion = /^[a-zA-Z0-9._-]*$/;
 const assetExpresion=/^[a-z]*$/;
@@ -28,14 +28,8 @@ export class socketService {
     const certPath = '/etc/ssl/certs/raptoreumworld.ddns.net+1.pem';
     const keyPath = '/etc/ssl/certs/raptoreumworld.ddns.net+1-key.pem';
     
-    
-    const options = {
-      key: fs.readFileSync(keyPath),
-      cert: fs.readFileSync(certPath)
-    };
-    
     this.io = new Server(
-      https.createServer(options).listen(4000),
+      http.createServer().listen(3000),
       {
         cors: {
           origin: "*",
@@ -44,7 +38,7 @@ export class socketService {
         },
       }
     );
-   console.log("conectado en"," ",4000)
+   console.log("conectado en"," ",3000)
  
   
     this.io.use(async (sockete:any, next:any) => {
