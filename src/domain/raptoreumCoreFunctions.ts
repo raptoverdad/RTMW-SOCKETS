@@ -1,9 +1,20 @@
-import { rejects } from "assert";
 const { exec } = require('child_process');
 import axios from 'axios';
+const util = require('util');
 
-
-
+import { UserGateway } from '../dataaccess/gateway';
+const gateway=UserGateway.getInstance()
+async function getFromCache(key: string,client:any): Promise<any | null> {
+const getAsync = util.promisify(client.get).bind(client);
+const setAsync = util.promisify(client.set).bind(client); 
+ const cachedData = await getAsync(key);
+  return JSON.parse(cachedData);
+}
+async function cacheData(key: string, data: any,client:any): Promise<void> {
+const getAsync = util.promisify(client.get).bind(client);
+const setAsync = util.promisify(client.set).bind(client);  
+await setAsync(key, JSON.stringify(data));
+}
 interface RpcRequest {
   jsonrpc: string;
   id: string;
@@ -12,17 +23,253 @@ interface RpcRequest {
 }
 export class raptoreumCoreAccess {
     private static instance: raptoreumCoreAccess;
-    public static async getInstance(): Promise<raptoreumCoreAccess>
+    private client:any
+     public static async getInstance(): Promise<raptoreumCoreAccess>
     {
+
       if (!raptoreumCoreAccess.instance) {
-        raptoreumCoreAccess.instance = new raptoreumCoreAccess();
-     
+ const instance = new raptoreumCoreAccess();
+ instance.client = await (await gateway).getRedisClient();
+ raptoreumCoreAccess.instance = instance;
       }
       return raptoreumCoreAccess.instance;
     }
 
-    public async getAccountBalance(usuario: any): Promise<number> {
+
+
+public async getassetdetailsbyname(name: string): Promise<any> {
+  try {
+    const rpcUser = 'rodrigo';
+    const rpcPassword = '1234'; // Reemplaza con tu contraseña
+    const rpcHost = `http://localhost:10225/wallet/`;
+    const requestData: RpcRequest = {
+      jsonrpc: '1.0',
+      id: 'curltest',
+      method: 'getassetdetailsbyname',
+      params: [name],
+    };
+    console.log('Sending request to RPC server');
+    const response = await axios.post(
+      rpcHost,
+      requestData,
+      {
+        auth: {
+          username: rpcUser,
+          password: rpcPassword,
+        },
+        headers: {
+          'Content-Type': 'text/plain;',
+        },
+      }
+    );
+    console.log('Received response from RPC server');
+    if (response) {
+      console.log(`Response status: ${response.status}`);
+      if (response.status === 200) {
+        console.log('Response status is 200');
+
+        if (response.data && response.data.result) {
+          console.log('Response data and result exist');
+
+          if (response.data.result.Asset_name) {
+            console.log('Asset name found');
+            return response.data.result;
+          } else {
+            console.log('Asset name not found');
+            return "notFound";
+          }
+        } else {
+          console.log('Response data or result does not exist');
+          return "notFound";
+        }
+      } else if (response.status === 500) {
+        console.log('Response status is 500');
+        return "notFound";
+      } else {
+        console.log('Response status is neither 200 nor 500');
+        return "getassetdetailsbynameError";
+      }
+    } else {
+      console.log('Response is empty');
+      return "getassetdetailsbynameError";
+    }
+  } catch (error:any) {
+    console.log('Caught an error');
+    if (error.response && error.response.status === 500) {
+      console.log('Error status is 500');
+      return "notFound";
+    } else {
+      console.log('Error status is not 500 or error response does not exist');
+      return "getassetdetailsbynameError";
+    }
+  }
+}
+public async getAddressBalance(address: string, asset: string): Promise<any> {
+  try {
+    const rpcUser = 'rodrigo';
+    const rpcPassword = '1234'; // Reemplaza con tu contraseña
+    const rpcHost = `http://localhost:10225/wallet/`;
+    const requestData = {
+      jsonrpc: '1.0',
+      id: 'curltest',
+      method: 'getaddressbalance',
+      params: [{ addresses: [address], asset: asset }],
+    };
+
+    console.log('Sending request to RPC server');
+    const response = await axios.post(
+      rpcHost,
+      requestData,
+      {
+        auth: {
+          username: rpcUser,
+          password: rpcPassword,
+        },
+        headers: {
+          'Content-Type': 'text/plain;',
+        },
+      }
+    );
+
+    console.log('Received response from RPC server');
+    if (response) {
+      console.log(`Response status: ${response.status}`);
+      if (response.status === 200) {
+        console.log('Response status is 200');
+
+        if (response.data && response.data.result) {
+           console.log('Response data and result exist');
+          const assetData = response.data.result[asset];
+          if (assetData) {
+            console.log(`Balance for asset ${asset}: ${assetData.balance}`);
+
+  const DECIMAL_FACTOR = Math.pow(10, 8);
+         
+            const rawValue = assetData.balance;
+            const realValue = rawValue / DECIMAL_FACTOR;
+assetData.balance=realValue
+            return assetData;
+          } else {
+            console.log('Asset data not found');
+            return "notFound";
+          }
+        } else {
+          console.log('Response data or result does not exist');
+          return "notFound";
+        }
+      } else if (response.status === 500) {
+        console.log('Response status is 500');
+        return "notFound";
+      } else {
+        console.log('Response status is neither 200 nor 500');
+        return "error";
+      }
+    } else {
+      console.log('Response is empty');
+      return "error";
+    }
+  } catch (error: any) {
+    console.log('Caught an error');
+    if (error.response && error.response.status === 500) {
+      console.log('Error status is 500');
+      return "notFound";
+    } else {
+      console.log('Error status is not 500 or error response does not exist');
+      return "error";
+    }
+  }
+}
+public  async getUserAssets(address: string): Promise<any> {
+  try {
+    const rpcUser = 'rodrigo';
+    const rpcPassword = '1234'; // Cambia con tu contraseña
+    const rpcHost = 'http://localhost:10225/';
+    const requestData = {
+      jsonrpc: '1.0',
+      id: 'curltest',
+      method: 'listassetbalancesbyaddress',
+      params: [address],
+    };
+
+    const response = await axios.post(rpcHost, requestData, {
+      auth: { username: rpcUser, password: rpcPassword },
+      headers: { 'Content-Type': 'text/plain;' },
+    });
+
+    if (response.status === 200 && response.data && response.data.result) {
+      const data = response.data.result;
+      const DECIMAL_FACTOR = Math.pow(10, 8);
+
+      const result = await Promise.all(
+        Object.keys(data).map(async (key) => {
+          // Intentar obtener detalles del activo desde el caché
+          const cachedAssetDetails = await getFromCache(`assetDetails:${key}`,this.client);
+
+          if (cachedAssetDetails) {
+            // Si se encuentra en el caché, usar los detalles del caché
+            return {
+              asset: key,
+              balance: data[key] / DECIMAL_FACTOR,
+              _id: false,
+              enVenta: false,
+              type: cachedAssetDetails.Isunique ? 'NFT' : 'TOKEN',
+              assetpicture: 'none',
+              acronimo: '',
+              assetid: cachedAssetDetails.Asset_id,
+            };
+          } else {
+            // Si no está en el caché, obtener detalles del activo y almacenarlos en el caché
+            let isNft = await this.getassetdetailsbyname(key);
+
+            if (isNft === 'getassetdetailsbynameError') {
+              return 'error';
+            }
+
+            const assetData = {
+              Isunique: isNft.Isunique,
+              Asset_id: isNft.Asset_id,
+            };
+
+            // Guardar en caché los detalles del activo con una expiración de 5 minutos (300 segundos)
+            await cacheData(`assetDetails:${key}`, assetData,this.client);
+
+            // Construir y retornar el objeto de activo
+            return {
+              asset: key,
+              balance: data[key] / DECIMAL_FACTOR,
+              _id: false,
+              enVenta: false,
+              type: isNft.Isunique ? 'NFT' : 'TOKEN',
+              assetpicture: 'none',
+              acronimo: '',
+              assetid: isNft.Asset_id,
+            };
+          }
+        })
+      );
+
+      // Verificar si hay algún error en los resultados
+      if (result.includes('error')) {
+        return 'getUserAssetsError';
+      }
+
+      // Filtrar resultados indefinidos que pueden haber quedado
+      const filteredResult = result.filter((r) => r !== undefined);
+
+      return filteredResult;
+    } else if (response.status === 404) {
+      return 'getUserAssetsError';
+    } else {
+      console.log('La petición salió mal en getUserAssets');
+      return 'getUserAssetsError';
+    }
+  } catch (error) {
+    console.error('Error en getUserAssets:', error);
+    return 'getUserAssetsError';
+  }
+}
      
+      public async getAccountBalance(usuario: any): Promise<number> {
         return new Promise(async (resolve, reject) => {
           try {
         const rpcUser = 'rodrigo';
@@ -33,6 +280,109 @@ const rpcHost = `http://localhost:10225/wallet/${usuario}`;
           id: 'curltest',
           method: 'getbalance',
           params: [],
+        };
+
+        const response = await axios.post(
+          rpcHost,
+          requestData,
+          {
+            auth: {
+              username: rpcUser,
+              password: rpcPassword,
+            },
+            headers: {
+              'Content-Type': 'text/plain;',
+            },
+          }
+        );
+
+        if (response) {
+          console.log("response true account balance!")
+          console.log(response)
+          const accountBalance = parseFloat(response.data.result);
+          resolve(accountBalance) ;
+        } else {
+          console.log("response false!")
+          reject(false)
+        }
+      } catch (error:any) {
+        console.log("error account balance:",error)
+        reject(false)
+      }
+      })
+    }
+public async listCoinholders(coin:string):Promise<any>{
+  try {
+    const rpcUser = 'rodrigo';
+    const rpcPassword = '1234'; // Reemplaza con tu contraseña
+    const rpcHost = `http://localhost:10225/`;
+    const requestData: RpcRequest = {
+      jsonrpc: '1.0',
+      id: 'curltest',
+      method: 'listassetbalancesbyaddress',
+      params: [coin],
+    };
+    const response = await axios.post(
+      rpcHost,
+      requestData,
+      {
+        auth: {
+          username: rpcUser,
+          password: rpcPassword,
+        },
+        headers: {
+          'Content-Type': 'text/plain;',
+        },
+      }
+    );
+    if (response) {
+      if(response.status == 200){
+        if(response.data)
+        {
+          console.log("DATA LIST COIN HOLDERS:", response.data);
+          let data = response.data.result || false;
+          if (!data || Object.keys(data).length === 0) return "listCoinHoldersError";
+          
+          const DECIMAL_FACTOR = Math.pow(10, 8);
+          const result = await Promise.all(Object.keys(data).map(async (key) => {
+            const rawValue = data[key];
+            const realValue = rawValue / DECIMAL_FACTOR;
+          
+            return {
+              address: key,
+              amount: realValue
+            };
+          }));
+          
+          return result;
+        }
+      }else if(response.status == 404){
+        return"listCoinHoldersError"
+        }
+
+     } else {
+      return"listCoinHoldersError"
+     }
+
+
+} catch (error)
+{
+
+  return"listCoinHoldersError"
+}
+
+}
+
+    public async getAssetBalance(address:string,assetId:string): Promise<any>{
+      try {
+        const rpcUser = 'rodrigo';
+    const rpcPassword = '1234'; // Reemplaza con tu contraseña
+    const rpcHost = `http://localhost:10225/`;
+        const requestData: RpcRequest = {
+          jsonrpc: '1.0',
+          id: 'curltest',
+          method: 'getaddressbalance',
+          params: [address,assetId],
         };
     
         const response = await axios.post(
@@ -49,191 +399,168 @@ const rpcHost = `http://localhost:10225/wallet/${usuario}`;
           }
         );
     
-        if (response) {
-          console.log(response)
-          const accountBalance = parseFloat(response.data.result);
-          resolve(accountBalance) ;
+        if (response && response.data.result) {
+    
+          console.log("response create wallet:",response.data.result)
+          return response.data.result;
         } else {
-          reject(false)
+          console.log("ELSE create wallet:",response)
+          return false;
         }
       } catch (error:any) {
-        reject(false)
+        console.log("ERROR CREATE WALLET:",error)
+        return false;
       }
-      })
     }
-public async getAssetBalance(vendedor:string,addressVendedor:string,assetId:string): Promise<number>{
-  return new Promise((resolve, reject) => {
-    // Retroceder un directorio
-//    exec(`raptoreum-cli -rpcwallet=${address} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
-//    if (error) {
-//      console.error(`Error al retroceder el directorio: ${error.message}`);
-//      reject(error);
-//    }
-//    if (stderr) {
-//      console.error(`Error en la salida estándar: ${stderr}`);
-//      reject(new Error(stderr));
-//    }else{
-//      console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
-//      const outputLines = stdout.trim().split('\n');
-//      const addressBalance = outputLines[outputLines.length - 1].trim();
-//      resolve(addressBalance)
-//}
-//// Listar archivos en el directorio actual  
-//});
-const numeroAleatorio = Math.floor(Math.random() * 11);
-resolve(numeroAleatorio)
-}) }
-public async withdrawToken(billeteraDelToken:string,to:string,cantidad:number,assetID:string): Promise<boolean>{
-  //revisar el balance de raptoreum para poder sacar el token
-  return new Promise((resolve, reject) => {
-    // Retroceder un directorio
-//    exec(`raptoreum-cli -rpcwallet=${address} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
-//    if (error) {
-//      console.error(`Error al retroceder el directorio: ${error.message}`);
-//      reject(error);
-//    }
-//    if (stderr) {
-//      console.error(`Error en la salida estándar: ${stderr}`);
-//      reject(new Error(stderr));
-//    }else{
-//      console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
-//      const outputLines = stdout.trim().split('\n');
-//      const addressBalance = outputLines[outputLines.length - 1].trim();
-//      resolve(addressBalance)
-//}
-//// Listar archivos en el directorio actual  
-//});
-resolve(false)
-//reject("Insufficient tokens funds")
-}) }
-//public async withdrawRaptoreum(username:string,address:string,amount:number): Promise<string | false> {
-//  return new Promise((resolve, reject) => {
-//      exec(`raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/${username} sendtoaddress "${address}" ${amount}`, { cwd: 'C:/Users/56947/Desktop/raptoreum' }, (error: any, stdout: any, stderr: any) => {
-//        if (error) {
-//          console.error(`Error al ejecutar el comando: ${error.message}`);
-//          return reject(false);
-//        } else if (stderr) {
-//          console.error(`Error en la salida estándar: ${stderr}`);
-//          return reject(false);
-//        } else {
-//            console.log(stdout)
-//          console.log("typeof de stdout:", typeof stdout)
-//          console.log("length de stdout:",stdout.length)
-//          if( stdout.length== 66){
-//            let output=stdout
-//            return resolve(output);
-//          }else if(stdout.includes("Insufficient")){
-//            console.log("rechazando")
-//            return reject("Insufficient raptoreum funds");
-//          }
-//    }});
-//  });
-//}
+   
+public async withdrawToken(billeteraDelToken:string,to:string,cantidad:number,assetID:string,rtmSpendAddresss:string,assetSpendAddress:string): Promise<any>{
+  try {
+    const rpcUser = 'rodrigo';
+const rpcPassword = '1234'; // Reemplaza con tu contraseña
 
-public async withdrawRaptoreum(username:string,address:string,amount:number): Promise<boolean> {
+
+const rpcHost = `http://localhost:10225/wallet/${billeteraDelToken}`;
+    const requestData: RpcRequest = {
+      jsonrpc: '1.0',
+      id: 'curltest',
+      method: 'sendasset',
+      params: [assetID,cantidad,to,rtmSpendAddresss,assetSpendAddress],
+    };
+    const response = await axios.post(
+      rpcHost,
+      requestData,
+      {
+        auth: {
+          username: rpcUser,
+          password: rpcPassword,
+        },
+        headers: {
+          'Content-Type': 'text/plain;',
+        },
+      }
+    );
+
+    if (response && response.status==200) {
+      console.log(response)
+    return true
+
+    }
+  } catch (error:any) {
+ console.log("ERROR WITHDRAW TOKEN",error)
+    return false
+  }
+}
+
+public async withdrawRaptoreum(username: string, address: string, amount: number): Promise<string> {
   return new Promise(async (resolve, reject) => {
+    try {
+      if(amount>0){
 
-      try {
-        let userBalance=await this.getAccountBalance(username)
-        if(userBalance){
-          if(userBalance>amount){
-            const rpcUser = 'rodrigo';
-            const rpcPassword = '1234'; // Reemplaza con tu contraseña
-            const rpcHost = `http://localhost:10225/wallet/${username}`;
-            const requestData: RpcRequest = {
-              jsonrpc: '1.0',
-              id: 'curltest',
-              method: 'sendtoaddress',
-              params: [address, amount],
-            };
-            const response = await axios.post(
-              rpcHost,
-              requestData,
-              {
-                auth: {
-                  username: rpcUser,
-                  password: rpcPassword,
-                },
-                headers: {
-                  'Content-Type': 'text/plain;',
-                },
-              }
-            );
-            if (response) {
-              if(response.data.length==64){
-                resolve(response.data)
+
+      let userBalance = await this.getAccountBalance(username);
+      if (userBalance) {
+        if (userBalance > amount) {
+          const rpcUser = 'rodrigo';
+          const rpcPassword = '1234'; // Reemplaza con tu contraseña
+          const rpcHost = `http://localhost:10225/wallet/${username}`;
+          const requestData: RpcRequest = {
+            jsonrpc: '1.0',
+            id: 'curltest',
+            method: 'sendtoaddress',
+            params: [address, amount],
+          };
+          const response = await axios.post(
+            rpcHost,
+            requestData,
+            {
+              auth: {
+                username: rpcUser,
+                password: rpcPassword,
+              },
+              headers: {
+                'Content-Type': 'text/plain;',
+              },
+            }
+          );
+          if (response) {
+            if (response.status == 200) {
+              if (response.data.result.length == 64) {
+                resolve(response.data.result);
+              } else {
+                reject("noValidResponse");
               }
             } else {
-                reject(false)
+              reject("notOk");
             }
-          }else{
-            reject("notEnoughBalance")
+          } else {
+            reject("notResponse");
           }
+        } else {
+          reject("notEnoughBalance");
         }
-      } catch (error) {
-        reject(false)
       }
-    
-  
-
+    }else{
+      reject("notEnoughBalance");
+    }
+    } catch (error) {
+      console.log(error)
+    }
   });
 }
-    //arrglar esta funcion
-    public async createWallet(): Promise<string | null> {
-      return new Promise((resolve, reject) => {
-        exec(`raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/wallet3/ getnewaddress`, { cwd: 'C:/Users/56947/Desktop/raptoreum' }, (error: any, stdout: any, stderr: any) => {
-          if (error) {
-            console.error(`Error al ejecutar el comando: ${error.message}`);
-            reject(error);
-          } else if (stderr) {
-            console.error(`Error en la salida estándar: ${stderr}`);
-            reject(stderr);
-          } else {
-            // Dividir la salida en líneas y tomar la última línea que contiene la dirección de la cartera
-            const outputLines = stdout.trim().split('\n');
-            const walletAddress = outputLines[outputLines.length - 1].trim();
-            // Devolver la dirección de la cartera
-            console.log("create wallet address",walletAddress)
-            resolve(walletAddress);
-          }
-        });
-      });
-    }
-    public async validateAddress(address: string): Promise<boolean> {
-      return new Promise((resolve, reject) => {
-        exec(`raptoreum-cli validateaddress "${address}"`, { cwd: 'C:/Users/56947/Desktop/raptoreum' }, (error: any, stdout: any, stderr: any) => {
-          if (error) {
-            console.error(`Error al ejecutar el comando: ${error.message}`);
-            reject(error.message);
-          } else if (stderr) {
-            console.error(`Error en la salida estándar: ${stderr}`);
-            reject(stderr);
-          } else {
-            const output = stdout;
-            if (output.indexOf('"isvalid":') !== -1) {
-              const startIndex = output.indexOf('"isvalid":') + '"isvalid":'.length;
-              if (startIndex === undefined) {
-                reject(new Error('No se pudo encontrar el índice de inicio'));
-              } else {
-                const endIndex = output.indexOf(',', startIndex) !== -1 ? output.indexOf(',', startIndex) : output.indexOf('}', startIndex);
-                let valid = output.substring(startIndex, endIndex).trim();
-                if (valid === 'true') {
-                  resolve(true);
-                } else if (valid === 'false') {
-                  resolve(false);
-                } else {
-                  reject(new Error('No se pudo determinar si la dirección es válida'));
+  public async validateAddress(address: string): Promise<boolean> {
+      return new Promise(async (resolve, reject) => {
+        try {
+              const rpcUser = 'rodrigo';
+              const rpcPassword = '1234'; // Reemplaza con tu contraseña
+              const rpcHost = `http://localhost:10225/wallet/`;
+              const requestData: RpcRequest = {
+                jsonrpc: '1.0',
+                id: 'curltest',
+                method: 'validateaddress',
+                params: [address],
+              };
+              const response = await axios.post(
+                rpcHost,
+                requestData,
+                {
+                  auth: {
+                    username: rpcUser,
+                    password: rpcPassword,
+                  },
+                  headers: {
+                    'Content-Type': 'text/plain;',
+                  },
                 }
-              }
-            } else {
-              reject(new Error('No se pudo encontrar el campo "isvalid" en la salida'));
-            }
-          }
-        });
-      });
-    }
+              );
+              if (response) {
 
-    
+                if(response.status == 200){
+                  if(response.data.result.isvalid == true)
+                  {
+                    resolve(true)
+                  }else
+                  {
+                    resolve(false)
+                  }
+                }else{
+                   reject(false)
+                  }
+
+               } else {
+                   reject(false)
+               }
+
+
+         } catch (error) {
+           reject(false)
+         }
+
+
+
+     });
+     }
+
+
+
 }
-
 

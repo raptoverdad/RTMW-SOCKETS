@@ -42,8 +42,7 @@ var socket_io_1 = require("socket.io");
 var gateway_1 = require("../dataaccess/gateway");
 var jwtFunctions_1 = require("./jwtFunctions");
 var raptoreumCoreFunctions_1 = require("./raptoreumCoreFunctions");
-var fs = require("fs");
-var https = require("https");
+var http = require("http");
 var tokenExpresion = /^[a-zA-Z0-9._-]*$/;
 var assetExpresion = /^[a-z]*$/;
 var passwordExpresion = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]*$/;
@@ -59,18 +58,14 @@ var socketService = /** @class */ (function () {
         this.key = "skrillex";
         var certPath = '/etc/ssl/certs/raptoreumworld.ddns.net+1.pem';
         var keyPath = '/etc/ssl/certs/raptoreumworld.ddns.net+1-key.pem';
-        var options = {
-            key: fs.readFileSync(keyPath),
-            cert: fs.readFileSync(certPath)
-        };
-        this.io = new socket_io_1.Server(https.createServer(options).listen(4000), {
+        this.io = new socket_io_1.Server(http.createServer().listen(3000), {
             cors: {
                 origin: "*",
                 methods: ["GET", "POST"],
                 credentials: false,
             },
         });
-        console.log("conectado en", " ", 4000);
+        console.log("conectado en", " ", 3000);
         this.io.use(function (sockete, next) { return __awaiter(_this, void 0, void 0, function () {
             var frontendKey;
             return __generator(this, function (_a) {
