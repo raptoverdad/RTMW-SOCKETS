@@ -3,6 +3,7 @@ import { UserGateway } from '../dataaccess/gateway';
 import { decodeToken } from './jwtFunctions';
 import { raptoreumCoreAccess } from './raptoreumCoreFunctions';
 import * as http from 'http';
+const speakeasy = require('speakeasy');
 import axios from 'axios'
 const tokenExpresion = /^[a-zA-Z0-9._-]*$/;
 const addressExpresion= /^[a-zA-Z0-9]*$/
@@ -97,7 +98,7 @@ export class socketService {
     if (subject === "assetsmarket" || subject === "nftmarket") {
         await this.handleMarket(subject, socket, socketId, user);
     }
-     
+
 
    socket.on('assetToMarket', async (data: any) => {
         let asset:string=data.asset
@@ -122,14 +123,23 @@ export class socketService {
         }
 
           try {
-            let result = await this.assetToMarket(data.asset, data.token, data.price);
+
+            let result = await this.assetToMarket(data.asset, data.token, data.price,data.totp);
             if (result)
             {
               socket.emit("successAssetToMarket", result);
               this.io.sockets.emit("newAssetInMarket", result);
               return;
             }
+
           } catch (e) {
+            if(e==="invalidTOTP"){
+
+              return socket.emit("invalidTOTP")
+   
+               }else if(e==="errorTOTP"){
+             return   socket.emit("errorTOTP")
+               }
             return  socket.emit("assetToMarketError", e);
           }
 
@@ -252,7 +262,7 @@ let itemEnVenta=null
 
       itemType = 'nft';
     }
-        
+
         console.log("obtendremos al vendedor:",itemEnVenta._id)
         let vendedor = await (await this.gateway).getVendedorDelToken(itemEnVenta._id,itemType);
         console.log("VENDEDOR:",vendedor)
@@ -277,16 +287,16 @@ let itemEnVenta=null
            await (await this.raptoreumCore).getAccountBalance(buyer),
            await (await this.raptoreumCore).getAddressBalance(tokenValido.address,"RAPTOREUMWORLDCOIN"),
         ]);
-      
+
         console.log("DATA IMPORTANTE:","BALANCE OF VENDEDOR:",balanceOfVendedor,"raptoreum balance of vendedor:",raptoreumBalanceOfVendedor, "BALANCE DEL COMPRADOR:",balanceOfBuyer,"RESULT GET ASSET BALANCE OF COMPRADOR:",resultGetAssetBalanceOfComprador)
         let isRWS = false
         if(resultGetAssetBalanceOfComprador !== "error" && resultGetAssetBalanceOfComprador !== "notFound" && resultGetAssetBalanceOfComprador>0) isRWS=true
     let balanceAssetEnVenta=balanceOfVendedor.find(e=>e.asset===itemEnVenta.asset)
-     
+
         if(balanceAssetEnVenta==="error")  return await this.handleError(socket, "notSelling", "Seller is not available");
      if(balanceAssetEnVenta==="notFound")  return await this.handleError(socket, "notSelling", "Seller is not available");
 
-         
+
  let raptoreumNecesario=itemEnVenta.price*data.cantidad
         if(!raptoreumNecesario)    return this.handleError(socket, "notAvailable", "no se pudo conseguir precio del asset");
         if ( balanceAssetEnVenta.balance >= data.cantidad ) {
@@ -302,7 +312,7 @@ let itemEnVenta=null
                     return this.handleError(socket, "buyerNotEnoughRaptoreum", "Buyer does not have enough Raptoreum");
                 }
             }
-         
+
 console.log("pasamos a bloquear:")
             let blocked =await (await this.gateway).blockOrUnblockUserTransactions(vendedor.vendedorId, "block");
              let blocked2 =await (await this.gateway).blockOrUnblockUserTransactions(buyer,"block");
@@ -311,7 +321,7 @@ console.log("pasamos a bloquear:")
                 console.log("no pudimos bloquear")
                      console.log("emitiendo couldNotConnect")
                 socket.emit('couldNotConnect');
-                return          
+                return
               }
     if (!blocked2) {
                 console.log("no pudimos bloquear")
@@ -386,7 +396,7 @@ console.log("pasamos a bloquear:")
                     if(pending)return socket.emit("errorDeCompra")
                  await (await this.gateway).blockOrUnblockUserTransactions(vendedor.vendedorId, "unblock");
                  await (await this.gateway).blockOrUnblockUserTransactions(vendedor.vendedorId, "unblock");
-                  }  
+                  }
             } catch (error) {
                  console.log("ERROR DE COMPRA:",error)
                 return this.handleError(socket, "errorDeCompra", "Purchase error");
@@ -479,10 +489,10 @@ console.log("asset market result:",marketAssets)
                 vendedor = await (await this.gateway).getVendedorDelNFT(orden);
             }
 
-            
-           
+
+
             let asseEncontrado=   await (await this.raptoreumCore).getAddressBalance(vendedor.sellerAddress,e.asset)
-             console.log("asseEncontrado:",asseEncontrado)   
+             console.log("asseEncontrado:",asseEncontrado)
 
             if (asseEncontrado !=="error" && asseEncontrado !=="notFound" && asseEncontrado.balance >= 1) {
                 console.log(`paso 2 el balance es mayor a 1, asignando balance al elemento`);
@@ -513,28 +523,41 @@ console.log("asset market result:",marketAssets)
     }
 }
 public async raptoreumWorldStockInvestorsMoney(comprador: string, rtmAenviar: number, transactionType: string) {
-    let result: any = await (await this.raptoreumCore).listCoinholders('RAPTOREUMWORLDCOIN');
-    if (result!=="listCoinHoldersError" && result.lenght >0) {
-      let envios = 0;
-      const assetPromises = result.map(async (ITEM: any) => {
-        let resultGetBalance = await (await this.raptoreumCore).getUserAssets(ITEM.address);
-        let resultGetBalanceOfToken=resultGetBalance.find((i:any) => i.asset === "RAPTOREUMWORLDCOIN");
-        if (resultGetBalanceOfToken && resultGetBalanceOfToken.balance != 0 && resultGetBalanceOfToken.balance > 0) {
-          let partes = resultGetBalanceOfToken;
+     let result = await (await this.raptoreumCore).listCoinholders("TESTINGCOIN");
+  if (result === "listCoinholdersError") {
+    return "error";
+  }
+  if (result === false) {
+    return false;
+  }
 
-          let withdraw = await (await this.raptoreumCore).withdrawRaptoreum(comprador, ITEM.address, partes * rtmAenviar);
-          if (withdraw) {
-            envios += partes;
-            (await this.gateway).raptoreumWorldStockTransaction(result.userid, partes * rtmAenviar, transactionType);
-          }
+  let envios = 0;
 
-        }
-      });
-      const resolvedAssets = await Promise.all(assetPromises);
-      return envios;
-    }else{
-      return false
+  // Helper function to create a delay
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  for (const ITEM of result) {
+    console.log("ADDRESS A VERIFICAR:", ITEM.address);
+    try {
+      let partes = ITEM.balance;
+
+      let withdraw = await (await this.raptoreumCore).withdrawRaptoreum(comprador, ITEM.address, partes * rtmAenviar);
+      if (withdraw) {
+        envios += partes;
+        await (await this.gateway).raptoreumWorldStockTransaction(ITEM.userid, partes * rtmAenviar, transactionType);
+      } else {
+        await (await this.gateway).raptoreumWorldStockTransaction(ITEM.userid, partes * rtmAenviar, "transaction error");
+      }
+
+      // Wait for 6 seconds before proceeding to the next iteration
+      await delay(6000);
+
+    } catch (error) {
+      return "error";
     }
+  }
+
+  return envios;
   }
   private async   handleError(socket:any, event:string, message:string) {
     console.log(message);
@@ -565,7 +588,7 @@ private async getRaptoreumdHealth(){
      return "error"
     }
  }
-  public async assetToMarket(asset: string, token: string, price: number): Promise<any> {
+  public async assetToMarket(asset: string, token: string, price: number,totp:any): Promise<any> {
     return new Promise(async (resolve, reject) => {
       try {
         console.log("primer paso");
@@ -574,20 +597,20 @@ private async getRaptoreumdHealth(){
  let isTotp=await this.isTOTP(usuariodecodificado.userid)
         if(isTotp==="error")return
         if(isTotp===true){
-         let resultTOTP=await this.verifyTOTP(usuariodecodificado.userid,data.totp)
-         if(resultTOTP===false)return socket.emit("invalidTOTP")
-           if(resultTOTP==="error")return socket.emit("errorTOTP")
+         let resultTOTP=await this.verifyTOTP(usuariodecodificado.userid,totp)
+         if(resultTOTP===false)reject( "invalidTOTP")
+           if(resultTOTP==="error")reject("errorTOTP") 
 
         }
 
-   let cuentaBloqueadaVendedor = await (await this.gateway).verifyAccountBlocked(vendedor.vendedorId);
+   let cuentaBloqueadaVendedor = await (await this.gateway).verifyAccountBlocked(usuariodecodificado.userid);
 
         if (cuentaBloqueadaVendedor!=="error" && cuentaBloqueadaVendedor===true) {
             console.log("cuenta bloqueada del vendedor!!")
-            return await this.handleError(socket, "notAvailable", "Seller's account is blocked");
+            reject("blockedAccount");
         }
         else if(cuentaBloqueadaVendedor==="error" ){
-           return await this.handleError(socket, "notAvailable", "Seller's account is blocked");
+          reject("error");
         }
 
           let getAssetType=await (await this.raptoreumCore).getUserAssets(usuariodecodificado.address)
@@ -643,8 +666,7 @@ console.log("ASSET A RETIRTAR:",asset)
 console.log("ASSET A RETIRTAR:",asset)
 console.log("ASSET A RETIRTAR:",asset)
 
-    let raptoreumWithdraw = false
-// await (await this.raptoreumCore).withdrawRaptoreum(buyer, sellerAddress, raptoreumAmount);
+    let raptoreumWithdraw = await (await this.raptoreumCore).withdrawRaptoreum(buyer, sellerAddress, raptoreumAmount);
     let tokenWithdraw = await  (await this.raptoreumCore).withdrawToken(sellerId, tokenAddress, tokenAmount, asset,sellerAddress,sellerAddress);
     return { raptoreumWithdraw, tokenWithdraw };
 }
@@ -749,5 +771,4 @@ console.log("ACTUALIZANDO DATA. TOKEN ENVIADO")
     setTimeout(intentar, 40000);
   }
 }
-
 

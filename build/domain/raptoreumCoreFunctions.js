@@ -39,16 +39,327 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.raptoreumCoreAccess = void 0;
 var exec = require('child_process').exec;
 var axios_1 = require("axios");
+var util = require('util');
+var gateway_1 = require("../dataaccess/gateway");
+var gateway = gateway_1.UserGateway.getInstance();
+function getFromCache(key, client) {
+    return __awaiter(this, void 0, void 0, function () {
+        var getAsync, setAsync, cachedData;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    getAsync = util.promisify(client.get).bind(client);
+                    setAsync = util.promisify(client.set).bind(client);
+                    return [4 /*yield*/, getAsync(key)];
+                case 1:
+                    cachedData = _a.sent();
+                    return [2 /*return*/, JSON.parse(cachedData)];
+            }
+        });
+    });
+}
+function cacheData(key, data, client) {
+    return __awaiter(this, void 0, void 0, function () {
+        var getAsync, setAsync;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    getAsync = util.promisify(client.get).bind(client);
+                    setAsync = util.promisify(client.set).bind(client);
+                    return [4 /*yield*/, setAsync(key, JSON.stringify(data))];
+                case 1:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
 var raptoreumCoreAccess = /** @class */ (function () {
     function raptoreumCoreAccess() {
     }
     raptoreumCoreAccess.getInstance = function () {
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                if (!raptoreumCoreAccess.instance) {
-                    raptoreumCoreAccess.instance = new raptoreumCoreAccess();
+            var instance, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        if (!!raptoreumCoreAccess.instance) return [3 /*break*/, 3];
+                        instance = new raptoreumCoreAccess();
+                        _a = instance;
+                        return [4 /*yield*/, gateway];
+                    case 1: return [4 /*yield*/, (_b.sent()).getRedisClient()];
+                    case 2:
+                        _a.client = _b.sent();
+                        raptoreumCoreAccess.instance = instance;
+                        _b.label = 3;
+                    case 3: return [2 /*return*/, raptoreumCoreAccess.instance];
                 }
-                return [2 /*return*/, raptoreumCoreAccess.instance];
+            });
+        });
+    };
+    raptoreumCoreAccess.prototype.getassetdetailsbyname = function (name) {
+        return __awaiter(this, void 0, void 0, function () {
+            var rpcUser, rpcPassword, rpcHost, requestData, response, error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        rpcUser = 'rodrigo';
+                        rpcPassword = '1234';
+                        rpcHost = "http://localhost:10225/wallet/";
+                        requestData = {
+                            jsonrpc: '1.0',
+                            id: 'curltest',
+                            method: 'getassetdetailsbyname',
+                            params: [name],
+                        };
+                        console.log('Sending request to RPC server');
+                        return [4 /*yield*/, axios_1.default.post(rpcHost, requestData, {
+                                auth: {
+                                    username: rpcUser,
+                                    password: rpcPassword,
+                                },
+                                headers: {
+                                    'Content-Type': 'text/plain;',
+                                },
+                            })];
+                    case 1:
+                        response = _a.sent();
+                        console.log('Received response from RPC server');
+                        if (response) {
+                            console.log("Response status: ".concat(response.status));
+                            if (response.status === 200) {
+                                console.log('Response status is 200');
+                                if (response.data && response.data.result) {
+                                    console.log('Response data and result exist');
+                                    if (response.data.result.Asset_name) {
+                                        console.log('Asset name found');
+                                        return [2 /*return*/, response.data.result];
+                                    }
+                                    else {
+                                        console.log('Asset name not found');
+                                        return [2 /*return*/, "notFound"];
+                                    }
+                                }
+                                else {
+                                    console.log('Response data or result does not exist');
+                                    return [2 /*return*/, "notFound"];
+                                }
+                            }
+                            else if (response.status === 500) {
+                                console.log('Response status is 500');
+                                return [2 /*return*/, "notFound"];
+                            }
+                            else {
+                                console.log('Response status is neither 200 nor 500');
+                                return [2 /*return*/, "getassetdetailsbynameError"];
+                            }
+                        }
+                        else {
+                            console.log('Response is empty');
+                            return [2 /*return*/, "getassetdetailsbynameError"];
+                        }
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_1 = _a.sent();
+                        console.log('Caught an error');
+                        if (error_1.response && error_1.response.status === 500) {
+                            console.log('Error status is 500');
+                            return [2 /*return*/, "notFound"];
+                        }
+                        else {
+                            console.log('Error status is not 500 or error response does not exist');
+                            return [2 /*return*/, "getassetdetailsbynameError"];
+                        }
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    raptoreumCoreAccess.prototype.getAddressBalance = function (address, asset) {
+        return __awaiter(this, void 0, void 0, function () {
+            var rpcUser, rpcPassword, rpcHost, requestData, response, assetData, DECIMAL_FACTOR, rawValue, realValue, error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        rpcUser = 'rodrigo';
+                        rpcPassword = '1234';
+                        rpcHost = "http://localhost:10225/wallet/";
+                        requestData = {
+                            jsonrpc: '1.0',
+                            id: 'curltest',
+                            method: 'getaddressbalance',
+                            params: [{ addresses: [address], asset: asset }],
+                        };
+                        console.log('Sending request to RPC server');
+                        return [4 /*yield*/, axios_1.default.post(rpcHost, requestData, {
+                                auth: {
+                                    username: rpcUser,
+                                    password: rpcPassword,
+                                },
+                                headers: {
+                                    'Content-Type': 'text/plain;',
+                                },
+                            })];
+                    case 1:
+                        response = _a.sent();
+                        console.log('Received response from RPC server');
+                        if (response) {
+                            console.log("Response status: ".concat(response.status));
+                            if (response.status === 200) {
+                                console.log('Response status is 200');
+                                if (response.data && response.data.result) {
+                                    console.log('Response data and result exist');
+                                    assetData = response.data.result[asset];
+                                    if (assetData) {
+                                        console.log("Balance for asset ".concat(asset, ": ").concat(assetData.balance));
+                                        DECIMAL_FACTOR = Math.pow(10, 8);
+                                        rawValue = assetData.balance;
+                                        realValue = rawValue / DECIMAL_FACTOR;
+                                        assetData.balance = realValue;
+                                        return [2 /*return*/, assetData];
+                                    }
+                                    else {
+                                        console.log('Asset data not found');
+                                        return [2 /*return*/, "notFound"];
+                                    }
+                                }
+                                else {
+                                    console.log('Response data or result does not exist');
+                                    return [2 /*return*/, "notFound"];
+                                }
+                            }
+                            else if (response.status === 500) {
+                                console.log('Response status is 500');
+                                return [2 /*return*/, "notFound"];
+                            }
+                            else {
+                                console.log('Response status is neither 200 nor 500');
+                                return [2 /*return*/, "error"];
+                            }
+                        }
+                        else {
+                            console.log('Response is empty');
+                            return [2 /*return*/, "error"];
+                        }
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_2 = _a.sent();
+                        console.log('Caught an error');
+                        if (error_2.response && error_2.response.status === 500) {
+                            console.log('Error status is 500');
+                            return [2 /*return*/, "notFound"];
+                        }
+                        else {
+                            console.log('Error status is not 500 or error response does not exist');
+                            return [2 /*return*/, "error"];
+                        }
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    raptoreumCoreAccess.prototype.getUserAssets = function (address) {
+        return __awaiter(this, void 0, void 0, function () {
+            var rpcUser, rpcPassword, rpcHost, requestData, response, data_1, DECIMAL_FACTOR_1, result, filteredResult, error_3;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 5, , 6]);
+                        rpcUser = 'rodrigo';
+                        rpcPassword = '1234';
+                        rpcHost = 'http://localhost:10225/';
+                        requestData = {
+                            jsonrpc: '1.0',
+                            id: 'curltest',
+                            method: 'listassetbalancesbyaddress',
+                            params: [address],
+                        };
+                        return [4 /*yield*/, axios_1.default.post(rpcHost, requestData, {
+                                auth: { username: rpcUser, password: rpcPassword },
+                                headers: { 'Content-Type': 'text/plain;' },
+                            })];
+                    case 1:
+                        response = _a.sent();
+                        if (!(response.status === 200 && response.data && response.data.result)) return [3 /*break*/, 3];
+                        data_1 = response.data.result;
+                        DECIMAL_FACTOR_1 = Math.pow(10, 8);
+                        return [4 /*yield*/, Promise.all(Object.keys(data_1).map(function (key) { return __awaiter(_this, void 0, void 0, function () {
+                                var cachedAssetDetails, isNft, assetData;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0: return [4 /*yield*/, getFromCache("assetDetails:".concat(key), this.client)];
+                                        case 1:
+                                            cachedAssetDetails = _a.sent();
+                                            if (!cachedAssetDetails) return [3 /*break*/, 2];
+                                            // Si se encuentra en el caché, usar los detalles del caché
+                                            return [2 /*return*/, {
+                                                    asset: key,
+                                                    balance: data_1[key] / DECIMAL_FACTOR_1,
+                                                    _id: false,
+                                                    enVenta: false,
+                                                    type: cachedAssetDetails.Isunique ? 'NFT' : 'TOKEN',
+                                                    assetpicture: 'none',
+                                                    acronimo: '',
+                                                    assetid: cachedAssetDetails.Asset_id,
+                                                }];
+                                        case 2: return [4 /*yield*/, this.getassetdetailsbyname(key)];
+                                        case 3:
+                                            isNft = _a.sent();
+                                            if (isNft === 'getassetdetailsbynameError') {
+                                                return [2 /*return*/, 'error'];
+                                            }
+                                            assetData = {
+                                                Isunique: isNft.Isunique,
+                                                Asset_id: isNft.Asset_id,
+                                            };
+                                            // Guardar en caché los detalles del activo con una expiración de 5 minutos (300 segundos)
+                                            return [4 /*yield*/, cacheData("assetDetails:".concat(key), assetData, this.client)];
+                                        case 4:
+                                            // Guardar en caché los detalles del activo con una expiración de 5 minutos (300 segundos)
+                                            _a.sent();
+                                            // Construir y retornar el objeto de activo
+                                            return [2 /*return*/, {
+                                                    asset: key,
+                                                    balance: data_1[key] / DECIMAL_FACTOR_1,
+                                                    _id: false,
+                                                    enVenta: false,
+                                                    type: isNft.Isunique ? 'NFT' : 'TOKEN',
+                                                    assetpicture: 'none',
+                                                    acronimo: '',
+                                                    assetid: isNft.Asset_id,
+                                                }];
+                                    }
+                                });
+                            }); }))];
+                    case 2:
+                        result = _a.sent();
+                        // Verificar si hay algún error en los resultados
+                        if (result.includes('error')) {
+                            return [2 /*return*/, 'getUserAssetsError'];
+                        }
+                        filteredResult = result.filter(function (r) { return r !== undefined; });
+                        return [2 /*return*/, filteredResult];
+                    case 3:
+                        if (response.status === 404) {
+                            return [2 /*return*/, 'getUserAssetsError'];
+                        }
+                        else {
+                            console.log('La petición salió mal en getUserAssets');
+                            return [2 /*return*/, 'getUserAssetsError'];
+                        }
+                        _a.label = 4;
+                    case 4: return [3 /*break*/, 6];
+                    case 5:
+                        error_3 = _a.sent();
+                        console.error('Error en getUserAssets:', error_3);
+                        return [2 /*return*/, 'getUserAssetsError'];
+                    case 6: return [2 /*return*/];
+                }
             });
         });
     };
@@ -57,7 +368,7 @@ var raptoreumCoreAccess = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var rpcUser, rpcPassword, rpcHost, requestData, response, accountBalance, error_1;
+                        var rpcUser, rpcPassword, rpcHost, requestData, response, accountBalance, error_4;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
@@ -83,16 +394,19 @@ var raptoreumCoreAccess = /** @class */ (function () {
                                 case 1:
                                     response = _a.sent();
                                     if (response) {
+                                        console.log("response true account balance!");
                                         console.log(response);
                                         accountBalance = parseFloat(response.data.result);
                                         resolve(accountBalance);
                                     }
                                     else {
+                                        console.log("response false!");
                                         reject(false);
                                     }
                                     return [3 /*break*/, 3];
                                 case 2:
-                                    error_1 = _a.sent();
+                                    error_4 = _a.sent();
+                                    console.log("error account balance:", error_4);
                                     reject(false);
                                     return [3 /*break*/, 3];
                                 case 3: return [2 /*return*/];
@@ -102,94 +416,170 @@ var raptoreumCoreAccess = /** @class */ (function () {
             });
         });
     };
-    raptoreumCoreAccess.prototype.getAssetBalance = function (vendedor, addressVendedor, assetId) {
+    raptoreumCoreAccess.prototype.listCoinholders = function (coin) {
         return __awaiter(this, void 0, void 0, function () {
+            var rpcUser, rpcPassword, rpcHost, requestData, response, data_2, DECIMAL_FACTOR_2, result, error_5;
+            var _this = this;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) {
-                        // Retroceder un directorio
-                        //    exec(`raptoreum-cli -rpcwallet=${address} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
-                        //    if (error) {
-                        //      console.error(`Error al retroceder el directorio: ${error.message}`);
-                        //      reject(error);
-                        //    }
-                        //    if (stderr) {
-                        //      console.error(`Error en la salida estándar: ${stderr}`);
-                        //      reject(new Error(stderr));
-                        //    }else{
-                        //      console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
-                        //      const outputLines = stdout.trim().split('\n');
-                        //      const addressBalance = outputLines[outputLines.length - 1].trim();
-                        //      resolve(addressBalance)
-                        //}
-                        //// Listar archivos en el directorio actual  
-                        //});
-                        var numeroAleatorio = Math.floor(Math.random() * 11);
-                        resolve(numeroAleatorio);
-                    })];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 8, , 9]);
+                        rpcUser = 'rodrigo';
+                        rpcPassword = '1234';
+                        rpcHost = "http://localhost:10225/";
+                        requestData = {
+                            jsonrpc: '1.0',
+                            id: 'curltest',
+                            method: 'listassetbalancesbyaddress',
+                            params: [coin],
+                        };
+                        return [4 /*yield*/, axios_1.default.post(rpcHost, requestData, {
+                                auth: {
+                                    username: rpcUser,
+                                    password: rpcPassword,
+                                },
+                                headers: {
+                                    'Content-Type': 'text/plain;',
+                                },
+                            })];
+                    case 1:
+                        response = _a.sent();
+                        if (!response) return [3 /*break*/, 6];
+                        if (!(response.status == 200)) return [3 /*break*/, 4];
+                        if (!response.data) return [3 /*break*/, 3];
+                        console.log("DATA LIST COIN HOLDERS:", response.data);
+                        data_2 = response.data.result || false;
+                        if (!data_2 || Object.keys(data_2).length === 0)
+                            return [2 /*return*/, "listCoinHoldersError"];
+                        DECIMAL_FACTOR_2 = Math.pow(10, 8);
+                        return [4 /*yield*/, Promise.all(Object.keys(data_2).map(function (key) { return __awaiter(_this, void 0, void 0, function () {
+                                var rawValue, realValue;
+                                return __generator(this, function (_a) {
+                                    rawValue = data_2[key];
+                                    realValue = rawValue / DECIMAL_FACTOR_2;
+                                    return [2 /*return*/, {
+                                            address: key,
+                                            amount: realValue
+                                        }];
+                                });
+                            }); }))];
+                    case 2:
+                        result = _a.sent();
+                        return [2 /*return*/, result];
+                    case 3: return [3 /*break*/, 5];
+                    case 4:
+                        if (response.status == 404) {
+                            return [2 /*return*/, "listCoinHoldersError"];
+                        }
+                        _a.label = 5;
+                    case 5: return [3 /*break*/, 7];
+                    case 6: return [2 /*return*/, "listCoinHoldersError"];
+                    case 7: return [3 /*break*/, 9];
+                    case 8:
+                        error_5 = _a.sent();
+                        return [2 /*return*/, "listCoinHoldersError"];
+                    case 9: return [2 /*return*/];
+                }
             });
         });
     };
-    raptoreumCoreAccess.prototype.withdrawToken = function (billeteraDelToken, to, cantidad, assetID) {
+    raptoreumCoreAccess.prototype.getAssetBalance = function (address, assetId) {
         return __awaiter(this, void 0, void 0, function () {
+            var rpcUser, rpcPassword, rpcHost, requestData, response, error_6;
             return __generator(this, function (_a) {
-                //revisar el balance de raptoreum para poder sacar el token
-                return [2 /*return*/, new Promise(function (resolve, reject) {
-                        // Retroceder un directorio
-                        //    exec(`raptoreum-cli -rpcwallet=${address} getbalance`, {cwd: 'C:/Users/56947/Desktop/raptoreum'}, (error:any, stdout:any, stderr:any) => {
-                        //    if (error) {
-                        //      console.error(`Error al retroceder el directorio: ${error.message}`);
-                        //      reject(error);
-                        //    }
-                        //    if (stderr) {
-                        //      console.error(`Error en la salida estándar: ${stderr}`);
-                        //      reject(new Error(stderr));
-                        //    }else{
-                        //      console.log(`Salida GETACCOUNTBALANCE:\n${stdout}`);
-                        //      const outputLines = stdout.trim().split('\n');
-                        //      const addressBalance = outputLines[outputLines.length - 1].trim();
-                        //      resolve(addressBalance)
-                        //}
-                        //// Listar archivos en el directorio actual  
-                        //});
-                        resolve(false);
-                        //reject("Insufficient tokens funds")
-                    })];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        rpcUser = 'rodrigo';
+                        rpcPassword = '1234';
+                        rpcHost = "http://localhost:10225/";
+                        requestData = {
+                            jsonrpc: '1.0',
+                            id: 'curltest',
+                            method: 'getaddressbalance',
+                            params: [address, assetId],
+                        };
+                        return [4 /*yield*/, axios_1.default.post(rpcHost, requestData, {
+                                auth: {
+                                    username: rpcUser,
+                                    password: rpcPassword,
+                                },
+                                headers: {
+                                    'Content-Type': 'text/plain;',
+                                },
+                            })];
+                    case 1:
+                        response = _a.sent();
+                        if (response && response.data.result) {
+                            console.log("response create wallet:", response.data.result);
+                            return [2 /*return*/, response.data.result];
+                        }
+                        else {
+                            console.log("ELSE create wallet:", response);
+                            return [2 /*return*/, false];
+                        }
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_6 = _a.sent();
+                        console.log("ERROR CREATE WALLET:", error_6);
+                        return [2 /*return*/, false];
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     };
-    //public async withdrawRaptoreum(username:string,address:string,amount:number): Promise<string | false> {
-    //  return new Promise((resolve, reject) => {
-    //      exec(`raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/${username} sendtoaddress "${address}" ${amount}`, { cwd: 'C:/Users/56947/Desktop/raptoreum' }, (error: any, stdout: any, stderr: any) => {
-    //        if (error) {
-    //          console.error(`Error al ejecutar el comando: ${error.message}`);
-    //          return reject(false);
-    //        } else if (stderr) {
-    //          console.error(`Error en la salida estándar: ${stderr}`);
-    //          return reject(false);
-    //        } else {
-    //            console.log(stdout)
-    //          console.log("typeof de stdout:", typeof stdout)
-    //          console.log("length de stdout:",stdout.length)
-    //          if( stdout.length== 66){
-    //            let output=stdout
-    //            return resolve(output);
-    //          }else if(stdout.includes("Insufficient")){
-    //            console.log("rechazando")
-    //            return reject("Insufficient raptoreum funds");
-    //          }
-    //    }});
-    //  });
-    //}
+    raptoreumCoreAccess.prototype.withdrawToken = function (billeteraDelToken, to, cantidad, assetID, rtmSpendAddresss, assetSpendAddress) {
+        return __awaiter(this, void 0, void 0, function () {
+            var rpcUser, rpcPassword, rpcHost, requestData, response, error_7;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        rpcUser = 'rodrigo';
+                        rpcPassword = '1234';
+                        rpcHost = "http://localhost:10225/wallet/".concat(billeteraDelToken);
+                        requestData = {
+                            jsonrpc: '1.0',
+                            id: 'curltest',
+                            method: 'sendasset',
+                            params: [assetID, cantidad, to, rtmSpendAddresss, assetSpendAddress],
+                        };
+                        return [4 /*yield*/, axios_1.default.post(rpcHost, requestData, {
+                                auth: {
+                                    username: rpcUser,
+                                    password: rpcPassword,
+                                },
+                                headers: {
+                                    'Content-Type': 'text/plain;',
+                                },
+                            })];
+                    case 1:
+                        response = _a.sent();
+                        if (response && response.status == 200) {
+                            console.log(response);
+                            return [2 /*return*/, true];
+                        }
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_7 = _a.sent();
+                        console.log("ERROR WITHDRAW TOKEN", error_7);
+                        return [2 /*return*/, false];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
     raptoreumCoreAccess.prototype.withdrawRaptoreum = function (username, address, amount) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var userBalance, rpcUser, rpcPassword, rpcHost, requestData, response, error_2;
+                        var userBalance, rpcUser, rpcPassword, rpcHost, requestData, response, error_8;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
-                                    _a.trys.push([0, 5, , 6]);
+                                    _a.trys.push([0, 7, , 8]);
+                                    if (!(amount > 0)) return [3 /*break*/, 5];
                                     return [4 /*yield*/, this.getAccountBalance(username)];
                                 case 1:
                                     userBalance = _a.sent();
@@ -216,12 +606,20 @@ var raptoreumCoreAccess = /** @class */ (function () {
                                 case 2:
                                     response = _a.sent();
                                     if (response) {
-                                        if (response.data.length == 64) {
-                                            resolve(response.data);
+                                        if (response.status == 200) {
+                                            if (response.data.result.length == 64) {
+                                                resolve(response.data.result);
+                                            }
+                                            else {
+                                                reject("noValidResponse");
+                                            }
+                                        }
+                                        else {
+                                            reject("notOk");
                                         }
                                     }
                                     else {
-                                        reject(false);
+                                        reject("notResponse");
                                     }
                                     return [3 /*break*/, 4];
                                 case 3:
@@ -229,83 +627,75 @@ var raptoreumCoreAccess = /** @class */ (function () {
                                     _a.label = 4;
                                 case 4: return [3 /*break*/, 6];
                                 case 5:
-                                    error_2 = _a.sent();
-                                    reject(false);
-                                    return [3 /*break*/, 6];
-                                case 6: return [2 /*return*/];
+                                    reject("notEnoughBalance");
+                                    _a.label = 6;
+                                case 6: return [3 /*break*/, 8];
+                                case 7:
+                                    error_8 = _a.sent();
+                                    console.log(error_8);
+                                    return [3 /*break*/, 8];
+                                case 8: return [2 /*return*/];
                             }
                         });
                     }); })];
             });
         });
     };
-    //arrglar esta funcion
-    raptoreumCoreAccess.prototype.createWallet = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) {
-                        exec("raptoreum-cli -rpcwallet=C:/Users/56947/AppData/Roaming/RaptoreumCore/wallet3/ getnewaddress", { cwd: 'C:/Users/56947/Desktop/raptoreum' }, function (error, stdout, stderr) {
-                            if (error) {
-                                console.error("Error al ejecutar el comando: ".concat(error.message));
-                                reject(error);
-                            }
-                            else if (stderr) {
-                                console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
-                                reject(stderr);
-                            }
-                            else {
-                                // Dividir la salida en líneas y tomar la última línea que contiene la dirección de la cartera
-                                var outputLines = stdout.trim().split('\n');
-                                var walletAddress = outputLines[outputLines.length - 1].trim();
-                                // Devolver la dirección de la cartera
-                                console.log("create wallet address", walletAddress);
-                                resolve(walletAddress);
-                            }
-                        });
-                    })];
-            });
-        });
-    };
     raptoreumCoreAccess.prototype.validateAddress = function (address) {
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) {
-                        exec("raptoreum-cli validateaddress \"".concat(address, "\""), { cwd: 'C:/Users/56947/Desktop/raptoreum' }, function (error, stdout, stderr) {
-                            if (error) {
-                                console.error("Error al ejecutar el comando: ".concat(error.message));
-                                reject(error.message);
-                            }
-                            else if (stderr) {
-                                console.error("Error en la salida est\u00E1ndar: ".concat(stderr));
-                                reject(stderr);
-                            }
-                            else {
-                                var output = stdout;
-                                if (output.indexOf('"isvalid":') !== -1) {
-                                    var startIndex = output.indexOf('"isvalid":') + '"isvalid":'.length;
-                                    if (startIndex === undefined) {
-                                        reject(new Error('No se pudo encontrar el índice de inicio'));
-                                    }
-                                    else {
-                                        var endIndex = output.indexOf(',', startIndex) !== -1 ? output.indexOf(',', startIndex) : output.indexOf('}', startIndex);
-                                        var valid = output.substring(startIndex, endIndex).trim();
-                                        if (valid === 'true') {
-                                            resolve(true);
-                                        }
-                                        else if (valid === 'false') {
-                                            resolve(false);
+                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
+                        var rpcUser, rpcPassword, rpcHost, requestData, response, error_9;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    _a.trys.push([0, 2, , 3]);
+                                    rpcUser = 'rodrigo';
+                                    rpcPassword = '1234';
+                                    rpcHost = "http://localhost:10225/wallet/";
+                                    requestData = {
+                                        jsonrpc: '1.0',
+                                        id: 'curltest',
+                                        method: 'validateaddress',
+                                        params: [address],
+                                    };
+                                    return [4 /*yield*/, axios_1.default.post(rpcHost, requestData, {
+                                            auth: {
+                                                username: rpcUser,
+                                                password: rpcPassword,
+                                            },
+                                            headers: {
+                                                'Content-Type': 'text/plain;',
+                                            },
+                                        })];
+                                case 1:
+                                    response = _a.sent();
+                                    if (response) {
+                                        if (response.status == 200) {
+                                            if (response.data.result.isvalid == true) {
+                                                resolve(true);
+                                            }
+                                            else {
+                                                resolve(false);
+                                            }
                                         }
                                         else {
-                                            reject(new Error('No se pudo determinar si la dirección es válida'));
+                                            reject(false);
                                         }
                                     }
-                                }
-                                else {
-                                    reject(new Error('No se pudo encontrar el campo "isvalid" en la salida'));
-                                }
+                                    else {
+                                        reject(false);
+                                    }
+                                    return [3 /*break*/, 3];
+                                case 2:
+                                    error_9 = _a.sent();
+                                    reject(false);
+                                    return [3 /*break*/, 3];
+                                case 3: return [2 /*return*/];
                             }
                         });
-                    })];
+                    }); })];
             });
         });
     };
