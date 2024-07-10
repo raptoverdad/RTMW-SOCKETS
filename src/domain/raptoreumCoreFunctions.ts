@@ -6,13 +6,13 @@ import { UserGateway } from '../dataaccess/gateway';
 const gateway=UserGateway.getInstance()
 async function getFromCache(key: string,client:any): Promise<any | null> {
 const getAsync = util.promisify(client.get).bind(client);
-const setAsync = util.promisify(client.set).bind(client); 
+const setAsync = util.promisify(client.set).bind(client);
  const cachedData = await getAsync(key);
   return JSON.parse(cachedData);
 }
 async function cacheData(key: string, data: any,client:any): Promise<void> {
 const getAsync = util.promisify(client.get).bind(client);
-const setAsync = util.promisify(client.set).bind(client);  
+const setAsync = util.promisify(client.set).bind(client);
 await setAsync(key, JSON.stringify(data));
 }
 interface RpcRequest {
@@ -72,6 +72,7 @@ public async getassetdetailsbyname(name: string): Promise<any> {
           console.log('Response data and result exist');
 
           if (response.data.result.Asset_name) {
+            
             console.log('Asset name found');
             return response.data.result;
           } else {
@@ -138,44 +139,85 @@ public async getAddressBalance(address: string, asset: string): Promise<any> {
         console.log('Response status is 200');
 
         if (response.data && response.data.result) {
-           console.log('Response data and result exist');
+          console.log('Response data and result exist');
           const assetData = response.data.result[asset];
           if (assetData) {
+            const cachedAssetDetails = await getFromCache(`assetDetails:${asset}`,this.client);
+
+           
             console.log(`Balance for asset ${asset}: ${assetData.balance}`);
 
-  const DECIMAL_FACTOR = Math.pow(10, 8);
-         
+            const DECIMAL_FACTOR = Math.pow(10, 8);
             const rawValue = assetData.balance;
             const realValue = rawValue / DECIMAL_FACTOR;
-assetData.balance=realValue
-            return assetData;
+
+            // Obtener detalles del asset
+        
+            if (cachedAssetDetails) {
+              return {
+                asset: asset,
+                balance:realValue,
+                _id: false,
+                enVenta: false,
+                type: cachedAssetDetails.Isunique ? 'NFT' : 'TOKEN',
+                assetpicture: 'none',
+                acronimo: '',
+                assetid: cachedAssetDetails.Asset_id,
+              };
+            }else{
+              let isNft = await this.getassetdetailsbyname(asset);
+     
+              if (isNft === 'getassetdetailsbynameError') {
+                return 'error';
+              }else if (isNft === 'notFound'){
+                return "error"
+              }
+              const result = {
+                asset: asset,
+                balance: realValue,
+                _id: false,
+                enVenta: false,
+                type: isNft.Isunique ? 'NFT' : 'TOKEN',
+                assetpicture: 'none',
+                acronimo: '',
+                assetid: isNft.Asset_id,
+              };
+              const assetToCache = {
+                Isunique: isNft.Isunique,
+                Asset_id: isNft.Asset_id,
+              };
+              await cacheData(`assetDetails:${asset}`, assetToCache,this.client);
+              return result;
+            }
+
+  
           } else {
             console.log('Asset data not found');
-            return "notFound";
+            return 'notFound';
           }
         } else {
           console.log('Response data or result does not exist');
-          return "notFound";
+          return 'notFound';
         }
       } else if (response.status === 500) {
         console.log('Response status is 500');
-        return "notFound";
+        return 'notFound';
       } else {
         console.log('Response status is neither 200 nor 500');
-        return "error";
+        return 'error';
       }
     } else {
       console.log('Response is empty');
-      return "error";
+      return 'error';
     }
   } catch (error: any) {
     console.log('Caught an error');
     if (error.response && error.response.status === 500) {
       console.log('Error status is 500');
-      return "notFound";
+      return 'notFound';
     } else {
       console.log('Error status is not 500 or error response does not exist');
-      return "error";
+      return 'error';
     }
   }
 }
@@ -268,7 +310,7 @@ public  async getUserAssets(address: string): Promise<any> {
     return 'getUserAssetsError';
   }
 }
-     
+
       public async getAccountBalance(usuario: any): Promise<number> {
         return new Promise(async (resolve, reject) => {
           try {
@@ -319,7 +361,7 @@ public async listCoinholders(coin:string):Promise<any>{
     const requestData: RpcRequest = {
       jsonrpc: '1.0',
       id: 'curltest',
-      method: 'listassetbalancesbyaddress',
+      method: 'listaddressesbyasset',
       params: [coin],
     };
     const response = await axios.post(
@@ -337,23 +379,24 @@ public async listCoinholders(coin:string):Promise<any>{
     );
     if (response) {
       if(response.status == 200){
+console.log("listcoinholders es 200")
         if(response.data)
         {
-          console.log("DATA LIST COIN HOLDERS:", response.data);
+          console.log("DATA LIST COIN HOLDERS:", response.data.result);
           let data = response.data.result || false;
-          if (!data || Object.keys(data).length === 0) return "listCoinHoldersError";
-          
+          if (!data || Object.keys(data).length === 0) return false;
+
           const DECIMAL_FACTOR = Math.pow(10, 8);
           const result = await Promise.all(Object.keys(data).map(async (key) => {
             const rawValue = data[key];
             const realValue = rawValue / DECIMAL_FACTOR;
-          
+
             return {
               address: key,
-              amount: realValue
+              balance: realValue
             };
           }));
-          
+          console.log("RESULTADO FINAL RAPTOREUMCORE LISTCOINHOLDERS:",result)
           return result;
         }
       }else if(response.status == 404){
@@ -367,11 +410,12 @@ public async listCoinholders(coin:string):Promise<any>{
 
 } catch (error)
 {
-
+console.log(error)
   return"listCoinHoldersError"
 }
 
 }
+
 
     public async getAssetBalance(address:string,assetId:string): Promise<any>{
       try {
@@ -384,7 +428,7 @@ public async listCoinholders(coin:string):Promise<any>{
           method: 'getaddressbalance',
           params: [address,assetId],
         };
-    
+
         const response = await axios.post(
           rpcHost,
           requestData,
@@ -398,9 +442,9 @@ public async listCoinholders(coin:string):Promise<any>{
             },
           }
         );
-    
+
         if (response && response.data.result) {
-    
+
           console.log("response create wallet:",response.data.result)
           return response.data.result;
         } else {
@@ -412,7 +456,7 @@ public async listCoinholders(coin:string):Promise<any>{
         return false;
       }
     }
-   
+
 public async withdrawToken(billeteraDelToken:string,to:string,cantidad:number,assetID:string,rtmSpendAddresss:string,assetSpendAddress:string): Promise<any>{
   try {
     const rpcUser = 'rodrigo';
