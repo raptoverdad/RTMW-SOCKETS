@@ -21,7 +21,7 @@ export class UserGateway {
  private ordenesVentaAssetsCollection:Collection<any> | null
  private comprasYventasAssetsCollection:Collection<userTransactions> | null
  private transaccionesPendientesCollection:Collection<any> | null
- private stockTransactionsCollection:Collection<userTransactions> | null
+ private stockTransactionsCollection:Collection<any> | null
  private nftCollection:Collection<any> | null
  private nftsEnVentaCollection:Collection<any> | null
  private ordenesVentaNFTsCollection:Collection<any> | null
@@ -167,7 +167,29 @@ public async updateCompraOventa(idTransaccion: string, newStatus: string, txid: 
   );
   return result;
 }
+public async getSales(user) {
+  try {
+    let result = [];
 
+    let [collectionOrdenesAssets, collectionOrdenesNfts] = await Promise.all([
+      this.ordenesVentaAssetsCollection?.find({ vendedorId: user }).toArray(),
+      this.ordenesVentaNFTsCollection?.find({ vendedorId: user }).toArray()
+    ]);
+
+    if (collectionOrdenesAssets && collectionOrdenesAssets.length > 0) {
+      result.push(...collectionOrdenesAssets);
+    }
+
+    if (collectionOrdenesNfts && collectionOrdenesNfts.length > 0) {
+      result.push(...collectionOrdenesNfts);
+    }
+    console.log("RESULT GET SALES DEL USUARIO: ",result)
+    return result.length > 0 ? result : false;
+  } catch (e) {
+    console.log("ERROR GETsales:", e);
+    return false;
+  }
+}
  public async insertCompraOventa(
   user: string,
   type: string,
@@ -296,15 +318,13 @@ public async updateCompraOventa(idTransaccion: string, newStatus: string, txid: 
     return "errorGettingToken";
   }
 }
-  public async raptoreumWorldStockTransaction(userid:string,rtmEnviado:number,transactionType:string)
-  {
-    let hora = new Date().toISOString();
-    let transaccion={type:transactionType,usuario:userid,rtmGanado:rtmEnviado,hora:hora}
-    const result = await this.stockTransactionsCollection?.updateOne(
-      { usuario: userid },
-      { $push: { transactions: transaccion } }
-  );
-  }
+    public async raptoreumWorldStockTransaction(address:string,rtmEnviado:number,transactionType:string)
+    {
+      let hora = new Date().toISOString();
+      let transaccion={type:transactionType,address:address,rtmGanado:rtmEnviado,hora:hora}
+      const result = await this.stockTransactionsCollection?.insertOne(transaccion);
+    }
+
   
   public async getVendedorDelToken(ordenId:string,type:string): Promise<any>{
 if(type==="Asset"){
@@ -427,7 +447,7 @@ console.log("TYPE DETENER: asset")
     }
 
    public async verifyAccountBlocked(username: string): Promise<boolean | string> {
-const securityTokenResult = await jwt.sign({ user: "root" }, "LongLiveSkrillexBnx6aw300172_", {
+const securityTokenResult = await jwt.sign({ user: "root" }, process.env.USERSSECRET, {
       expiresIn: '1h' // El token expirará en 1 hora
     });
  
@@ -451,7 +471,7 @@ const securityTokenResult = await jwt.sign({ user: "root" }, "LongLiveSkrillexBn
   }
 
     public async blockOrUnblockUserTransactions(username: string, action: 'block' | 'unblock'): Promise<boolean> {
-    const securityTokenResult = await jwt.sign({ user: username }, "LongLiveSkrillexBnx6aw300172_", {
+    const securityTokenResult = await jwt.sign({ user: username }, process.env.USERSSECRET, {
       expiresIn: '1h' // El token expirará en 1 hora
     });
 
@@ -842,22 +862,28 @@ console.log("body enviado:",body)
       return success;
     }
 
-
   
   private async setupDatabase(): Promise<void> {
     let connected = false;
     // Nos conectamos a MySQL
-    while (!connected) {
+let mysqlpassword=process.env.USERSSECRET
+   
+ while (!connected) {
       try {
         this.pool = await mysql.createPool({
           host: '127.0.0.1',
           user: 'raptoreumworld',
-          password: 'Bnx6aw300172_',
+          password: mysqlpassword,
           database: 'raptoreumworld'
         });
         console.log('Connected to MySQL');
-   // Una vez conectados a MySQL, establecemos la conexión a MongoDB
-        const client = new MongoClient('mongodb://127.0.0.1:27017');
+        let mongoPass=process.env.MONGOPASS
+console.log("MONGO PASS: ",mongoPass)
+let mongoUser='raptoreumworld'
+let auth="DEFAULT"
+       const uri = `mongodb://${mongoUser}:${mongoPass}@127.0.0.1/raptoreumworld?authMechanism=${auth}`;
+  const client = new MongoClient(uri);
+
         await client.connect();
         this.db = client.db('raptoreumworld');
         this.assetsCollection = this.db.collection('assets');
