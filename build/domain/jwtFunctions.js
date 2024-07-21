@@ -42,7 +42,7 @@ function decodeToken(token) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             return [2 /*return*/, new Promise(function (resolve, reject) {
-                    jwt.verify(token, "LongLiveSkrillexBnx6aw300172_", function (err, decoded) {
+                    jwt.verify(token, process.env.USERSSECRET, function (err, decoded) {
                         if (err) {
                             console.log("token error:", err);
                             if (err.message === "jwt expired") {

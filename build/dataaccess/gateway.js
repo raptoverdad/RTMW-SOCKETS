@@ -63,7 +63,7 @@ var UserGateway = /** @class */ (function () {
         this.client = redis.createClient({
             host: 'localhost',
             port: 6380,
-            // password: 'tu-contraseña', // Si has configurado una contraseña para Redis, descomenta y config                                                         ura esta línea
+            password: process.env.GOOGLEPASS,
             legacyMode: true
         });
         this.client.connect().catch(console.error);
@@ -285,6 +285,38 @@ var UserGateway = /** @class */ (function () {
             });
         });
     };
+    UserGateway.prototype.getSales = function (user) {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function () {
+            var result, _c, collectionOrdenesAssets, collectionOrdenesNfts, e_1;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        _d.trys.push([0, 2, , 3]);
+                        result = [];
+                        return [4 /*yield*/, Promise.all([
+                                (_a = this.ordenesVentaAssetsCollection) === null || _a === void 0 ? void 0 : _a.find({ vendedorId: user }).toArray(),
+                                (_b = this.ordenesVentaNFTsCollection) === null || _b === void 0 ? void 0 : _b.find({ vendedorId: user }).toArray()
+                            ])];
+                    case 1:
+                        _c = _d.sent(), collectionOrdenesAssets = _c[0], collectionOrdenesNfts = _c[1];
+                        if (collectionOrdenesAssets && collectionOrdenesAssets.length > 0) {
+                            result.push.apply(result, collectionOrdenesAssets);
+                        }
+                        if (collectionOrdenesNfts && collectionOrdenesNfts.length > 0) {
+                            result.push.apply(result, collectionOrdenesNfts);
+                        }
+                        console.log("RESULT GET SALES DEL USUARIO: ", result);
+                        return [2 /*return*/, result.length > 0 ? result : false];
+                    case 2:
+                        e_1 = _d.sent();
+                        console.log("ERROR GETsales:", e_1);
+                        return [2 /*return*/, false];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
     UserGateway.prototype.insertCompraOventa = function (user, type, rtmInvolucrado, assetInvolucrado, assetInvolucradoCantidad, URLcoinSoldOrBought, typeAsset) {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
@@ -457,7 +489,7 @@ var UserGateway = /** @class */ (function () {
             });
         });
     };
-    UserGateway.prototype.raptoreumWorldStockTransaction = function (userid, rtmEnviado, transactionType) {
+    UserGateway.prototype.raptoreumWorldStockTransaction = function (address, rtmEnviado, transactionType) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
             var hora, transaccion, result;
@@ -465,8 +497,8 @@ var UserGateway = /** @class */ (function () {
                 switch (_b.label) {
                     case 0:
                         hora = new Date().toISOString();
-                        transaccion = { type: transactionType, usuario: userid, rtmGanado: rtmEnviado, hora: hora };
-                        return [4 /*yield*/, ((_a = this.stockTransactionsCollection) === null || _a === void 0 ? void 0 : _a.updateOne({ usuario: userid }, { $push: { transactions: transaccion } }))];
+                        transaccion = { type: transactionType, address: address, rtmGanado: rtmEnviado, hora: hora };
+                        return [4 /*yield*/, ((_a = this.stockTransactionsCollection) === null || _a === void 0 ? void 0 : _a.insertOne(transaccion))];
                     case 1:
                         result = _b.sent();
                         return [2 /*return*/];
@@ -685,7 +717,7 @@ var UserGateway = /** @class */ (function () {
             var securityTokenResult, config, response, error_8;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, jwt.sign({ user: "root" }, "LongLiveSkrillexBnx6aw300172_", {
+                    case 0: return [4 /*yield*/, jwt.sign({ user: "root" }, process.env.USERSSECRET, {
                             expiresIn: '1h' // El token expirará en 1 hora
                         })];
                     case 1:
@@ -722,7 +754,7 @@ var UserGateway = /** @class */ (function () {
             var securityTokenResult, config, body, endpoint, response, error_9;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, jwt.sign({ user: username }, "LongLiveSkrillexBnx6aw300172_", {
+                    case 0: return [4 /*yield*/, jwt.sign({ user: username }, process.env.USERSSECRET, {
                             expiresIn: '1h' // El token expirará en 1 hora
                         })];
                     case 1:
@@ -818,10 +850,8 @@ var UserGateway = /** @class */ (function () {
                     case 2:
                         result = (_a.sent())[0];
                         if (Array.isArray(result)) {
-                            if (result.length == 0 || result == undefined) {
-                                return [2 /*return*/, " await (await this.gateway).verifyAccountBlocked(buyer);"];
-                            }
-                            else if (result.length > 0) {
+                            if (result) {
+                                console.log("RESULT OBTENIDO EN GETUSERADDRESS: ", result);
                                 return [2 /*return*/, result[0].address];
                             }
                             else {
@@ -1113,7 +1143,7 @@ var UserGateway = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var asset, _id, vendedorId, sellerAddress, collection, resultInsert, e_1;
+                        var asset, _id, vendedorId, sellerAddress, collection, resultInsert, e_2;
                         var _a, _b;
                         return __generator(this, function (_c) {
                             switch (_c.label) {
@@ -1194,8 +1224,8 @@ var UserGateway = /** @class */ (function () {
                                 case 14: return [2 /*return*/, reject("Database connection is not available")];
                                 case 15: return [3 /*break*/, 17];
                                 case 16:
-                                    e_1 = _c.sent();
-                                    console.log(e_1);
+                                    e_2 = _c.sent();
+                                    console.log(e_2);
                                     return [2 /*return*/, reject("No se pudo insertar el asset en la colección correspondiente")];
                                 case 17: return [2 /*return*/];
                             }
@@ -1286,11 +1316,12 @@ var UserGateway = /** @class */ (function () {
     };
     UserGateway.prototype.setupDatabase = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var connected, _a, client, error_16;
+            var connected, mysqlpassword, _a, mongoPass, mongoUser, auth, uri, client, error_16;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         connected = false;
+                        mysqlpassword = process.env.USERSSECRET;
                         _b.label = 1;
                     case 1:
                         if (!!connected) return [3 /*break*/, 8];
@@ -1301,13 +1332,18 @@ var UserGateway = /** @class */ (function () {
                         return [4 /*yield*/, mysql.createPool({
                                 host: '127.0.0.1',
                                 user: 'raptoreumworld',
-                                password: 'Bnx6aw300172_',
+                                password: mysqlpassword,
                                 database: 'raptoreumworld'
                             })];
                     case 3:
                         _a.pool = _b.sent();
                         console.log('Connected to MySQL');
-                        client = new mongodb_1.MongoClient('mongodb://127.0.0.1:27017');
+                        mongoPass = process.env.MONGOPASS;
+                        console.log("MONGO PASS: ", mongoPass);
+                        mongoUser = 'raptoreumworld';
+                        auth = "DEFAULT";
+                        uri = "mongodb://".concat(mongoUser, ":").concat(mongoPass, "@127.0.0.1/raptoreumworld?authMechanism=").concat(auth);
+                        client = new mongodb_1.MongoClient(uri);
                         return [4 /*yield*/, client.connect()];
                     case 4:
                         _b.sent();

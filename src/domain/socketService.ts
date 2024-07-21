@@ -103,57 +103,8 @@ if(!busySales)await cacheData(`busyAssets`,[],this.redisClient)
     if (!this.rateLimiters[socketId]) {
       this.rateLimiters[socketId] = new RateLimiter(1, 1 / 3);
     }
-    socket.on('notBusyUserAsset', async(data:any) => {
-       //decodear el token proviniente del microservicio
-       let tokenDecode = await decodeToken(data.token);
-       if(tokenDecode !== "error" && tokenDecode !=="expired"){
-       let busyAssets= await getFromCache(`busyAssets`,this.redisClient)
-       const index = busyAssets.findIndex((i: any) => i.user === data.user);
-       if (index !== -1) {
-        busyAssets.splice(index, 1); // Elimina el objeto encontrado
-        await cacheData("busyAssets",busyAssets,this.redisClient)
-       }
-       let busySales = await getFromCache(`busySales`,this.redisClient)
-       let resultFound = busySales.find(i=>i.user===data.user)
-       if(resultFound){
-        this.io.sockets.emit("notBusySeller", {ventaId:resultFound.ventaId,actualBalance:"+1",buyer:"."});
-       }
 
-       }else{console.log("TOKEN NO VALIDO")}
-       return
-    });
 
-    socket.on('getBusyUser', async(data:any) => {
-      let token=data.token
-      let tokenDecode = await decodeToken(token);
-      if(tokenDecode==="error")   return
-      if(tokenDecode==="expired")return socket.emit("expired")
-    let userDecoded=tokenDecode.userid
-      let busy=[]
-      let busyAssets= await getFromCache(`busyAssets`,this.redisClient)
-       if(busyAssets){
-    const index = busyAssets.find((i: any) => i.user === userDecoded);
-      if (index) {
-        busy.push({reason:"assetCreation"})
-      }
-}
-      let busySales= await getFromCache(`busySales`,this.redisClient)
-if(busySales){
-console.log("busySales: ",busySales)
-     const index2 = busySales.find((i: any) => i.user === userDecoded);
-      if (index2) {
-        busy.push({reason:"sale"})
-      }
-
-       const index3 = busySales.find((i: any) => i.buyer === userDecoded);
-      if (index3) {
-        busy.push({reason:"sale"})
-      }
-
-}
-       await socket.emit("getBusyUserData",busy)
-       return
-    });
 
    // console.log("new connection");
    // console.log("object connection:", socket.handshake.query.object);
@@ -161,6 +112,54 @@ console.log("busySales: ",busySales)
     if (subject === "assetsmarket" || subject === "nftmarket") {
         await this.handleMarket(subject, socket, socketId, user);
     }
+    socket.on('assetToMarketDiscord', async (data) => {
+      let asset = data.asset;
+      let price = parseFloat(data.price);
+
+      // Verificar si `price` es un número válido y está dentro del rango permitido
+      if (isNaN(price) || price <= 0 || price > 1000000000) {
+          return socket.emit("ASSETTOMARKET_assetToMarketError", { comprador: data.userid });
+      }
+
+      if (!asset || asset.length < 1 || asset.length > 250) {
+          return socket.emit("ASSETTOMARKET_assetToMarketError", { comprador: data.userid });
+      }
+
+      let health = await this.getRaptoreumdHealth();
+      if (health == "error" || health == "dead") {
+          return socket.emit("ASSETTOMARKET_serverDown", { comprador: data.userid });
+      }
+
+      try {
+          let result = await this.assetToMarket(data.asset, data.token, data.price, data.totp);
+          console.log("result assetToMarket:", result);
+          if (result) {
+              socket.emit("ASSETTOMARKET_successAssetToMarket", { comprador: data.userid });
+              if(result.type==="TOKEN") this.io.sockets.emit("newAssetInMarket", result.result);
+              if(result.type==="NFT")this.io.sockets.emit("newNftInMarket", result.result);
+              return;
+          }
+      } catch (e) {
+          switch (e) {
+              case "invalidTOTP":
+                  return socket.emit("ASSETTOMARKET_invalidTOTP", { comprador: data.userid });
+              case "errorTOTP":
+                  return socket.emit("ASSETTOMARKET_errorTOTP", { comprador: data.userid });
+              case "blockedAccount":
+                  return socket.emit("ASSETTOMARKET_blockedAccount", { comprador: data.userid });
+              case "assetNotFoundInWallet":
+                  return socket.emit("ASSETTOMARKET_assetNotFoundInWallet", { comprador: data.userid });
+              case "selling":
+                  return socket.emit("ASSETTOMARKET_selling", { comprador: data.userid });
+              case "expired":
+                  return socket.emit("ASSETTOMARKET_expired", { comprador: data.userid });
+              case "notExists":
+                  return socket.emit("ASSETTOMARKET_notExists", { comprador: data.userid });
+              default:
+                  return socket.emit("ASSETTOMARKET_assetToMarketError", { comprador: data.userid });
+          }
+      }
+  });
     socket.on('assetToMarket', async (data: any) => {
       let asset: string = data.asset;
       let price = parseFloat(data.price);
@@ -187,30 +186,115 @@ console.log("busySales: ",busySales)
         let result = await this.assetToMarket(data.asset, data.token, data.price, data.totp);
         console.log("result assetToMarket:",result)
         if (result) {
- socket.emit("successAssetToMarket", result.result);
-         if(result.type==="TOKEN") this.io.sockets.emit("newAssetInMarket", result.result);
-         if(result.type==="NFT")this.io.sockets.emit("newNftInMarket", result.result);
-          return;
+           socket.emit("successAssetToMarket", result.result);
+           if(result.type==="TOKEN") this.io.sockets.emit("newAssetInMarket", result.result);
+           if(result.type==="NFT")this.io.sockets.emit("newNftInMarket", result.result);
+           return;
         }
       } catch (e) {
-        if (e === "invalidTOTP") {
-          return socket.emit("invalidTOTP");
-        } else if (e === "errorTOTP") {
-          return socket.emit("errorTOTP");
-        } else if (e === "blockedAccount") {
-          return socket.emit("blockedAccount");
-        } else if (e === "assetNotFoundInWallet") {
-          return socket.emit("assetNotFoundInWallet");
-        } else if (e === "selling") {
-          return socket.emit("selling");
-        } else if (e === "expired") {
+
+          if (e === "invalidTOTP") {
+            return socket.emit("invalidTOTP");
+          } else if (e === "errorTOTP") {
+            return socket.emit("errorTOTP");
+          } else if (e === "blockedAccount") {
+            return socket.emit("blockedAccount");
+          } else if (e === "assetNotFoundInWallet") {
+            return socket.emit("assetNotFoundInWallet");
+          } else if (e === "selling") {
+            return socket.emit("selling");
+          } else if (e === "expired") {
+            return socket.emit("expired");
+          } else if (e === "notExists") {
+            return socket.emit("notExists");
+          } else {
+            return socket.emit("assetToMarketError", e);
+          }
+
+
+
+      }
+    });
+    socket.on('detenerVentaDiscord', async (data: { token: string; asset: string; ventaId: string;userid:string}) => {
+
+   console.log("DATA QUE LLEGA PARA DETENER VENTA:", data);
+
+try{
+      let healh=await this.getRaptoreumdHealth()
+console.log("resultado health:",healh)
+      if(healh == "error"){
+   console.log("emiting serverDown")
+        return socket.emit("STOPSALE_serverDown",{comprador:data.userid})
+      }else if(healh=="dead"){
+  console.log("emiting serverDown")
+       return socket.emit("STOPSALE_serverDown",{comprador:data.userid})
+      }
+
+      if (tokenExpresion.test(data.token)) {
+        let tokenValido = await decodeToken(data.token);
+        if (tokenValido != "expired" && tokenValido != "error") {
+console.log("TOKEN VALIDO")
+//sacar de las ordenes de los clientes si sierta orden está vinculada a su userid y si está se procede a eliminar la venta
+          let usuario = tokenValido.userid;
+console.log("pasando a verifyaccountblocked")
+
+            console.log("data con la que revisar token en venta por el usuario:", data);
+            const NFTenVentaPorElUsuario = await (await this.gateway).verifyNftEnVenta(data.asset, usuario, data.ventaId);
+            const enVentaPorElUsuario = await (await this.gateway).verifyTokenEnVenta(data.asset, usuario, data.ventaId);
+            if (enVentaPorElUsuario && !NFTenVentaPorElUsuario) {
+              console.log("asset en venta")
+              let resultDetenerVenta = await (await this.gateway).detenerVenta(usuario, data.ventaId,"asset");
+              if (resultDetenerVenta) {
+
+                //enviar el id de la venta y removerlo del market assets en el front
+                     //enviar el id de la venta y removerlo del market assets en el front
+                     let isActive= await getFromCache(`busySales`,this.redisClient)
+                     const index = isActive.findIndex((i: any) => i.ventaId === data.ventaId);
+
+                     if (index !== -1) {
+                       isActive.splice(index, 1); // Elimina el objeto encontrado
+                       await cacheData(`busySales`,isActive,this.redisClient); // Guarda el array actualizado en Redis
+                     }
+                 socket.emit("STOPSALE_ventaUsuarioDetenida",{comprador:data.userid});
+                  return this.io.sockets.emit("ventaDetenida", data.ventaId);
+              } else {
+               return    socket.emit("STOPSALE_errorStoppingSell",{comprador:data.userid});
+              }
+            }   if (!enVentaPorElUsuario && NFTenVentaPorElUsuario) {
+console.log("nft en venta")
+
+              let resultDetenerVenta = await (await this.gateway).detenerVenta(usuario, data.ventaId,"nft");
+              if (resultDetenerVenta) {
+                //enviar el id de la venta y removerlo del market assets en el front
+                let isActive= await getFromCache(`busySales`,this.redisClient)
+                const index = isActive.findIndex((i: any) => i.ventaId === data.ventaId);
+
+                if (index !== -1) {
+                  isActive.splice(index, 1); // Elimina el objeto encontrado
+                  await cacheData(`busySales`,isActive,this.redisClient); // Guarda el array actualizado en Redis
+                }
+                 socket.emit("STOPSALE_ventaUsuarioDetenida", {comprador:data.userid});
+                  return this.io.sockets.emit("ventaDetenida", data.ventaId);
+              } else {
+               return    socket.emit("STOPSALE_errorStoppingSell",{comprador:data.userid});
+              }
+             } else if (!enVentaPorElUsuario && !NFTenVentaPorElUsuario){
+              console.log("EMITIENDO NOT SELLING Y CONSOLEANDO ENVENTAPORELUSUARIO:", enVentaPorElUsuario);
+           return  socket.emit("STOPSALE_notSelling",{comprador:data.userid});
+            }
+
+        } else if (tokenValido == "expired") {
           return socket.emit("expired");
-        } else if (e === "notExists") {
-          return socket.emit("notExists");
-        } else {
-          return socket.emit("assetToMarketError", e);
         }
       }
+
+
+       }catch(e){
+console.log(e)
+
+       }
+      return
+
     });
    socket.on('detenerVenta', async (data: { token: string; asset: string; ventaId: string;}) => {
         if (!this.rateLimiters[socketId].consume(1, user)) {
@@ -296,12 +380,21 @@ console.log(e)
         return
 
       });
+
  socket.on('compra', async (data: { token: string; ventaId: string; cantidad: number;totp:any; }) => {
     if (tokenExpresion.test(data.token) && typeof (data.cantidad) == "number" && data.cantidad > 0) {
         console.log("pasamos la validacion de parametros")
         let tokenValido = await decodeToken(data.token);
         if(tokenValido==="error")   return this.handleError(socket, "errorDeCompra", "jwt error");
         if(tokenValido==="expired")return socket.emit("expired")
+        if(!tokenValido.address)
+        {
+        let address=await (await this.gateway).getUserAddress(tokenValido.userid)
+        if(address==="error")return socket.emit("errorDeCompra")
+        if(address==="no address")return socket.emit("errorDeCompra")
+        tokenValido.address=address
+        }
+
         let isTotp=await this.isTOTP(tokenValido.userid)
         if(isTotp==="error")   return this.handleError(socket, "errorDeCompra", "totp error");
         if(isTotp===true){
@@ -364,12 +457,23 @@ let itemEnVenta=null
            await (await this.raptoreumCore).getUserAssets(vendedor.sellerAddress),
            await (await this.raptoreumCore).getAccountBalance(vendedor.vendedorId),
            await (await this.raptoreumCore).getAccountBalance(buyer),
-           await (await this.raptoreumCore).getAddressBalance(tokenValido.address,"RAPTOREUMWORLDCOIN"),
+           await (await this.raptoreumCore).getAddressBalance(tokenValido.address,"TESTINGCOINTESTINGCOIN"),
         ]);
 
         console.log("DATA IMPORTANTE:","BALANCE OF VENDEDOR:",balanceOfVendedor,"raptoreum balance of vendedor:",raptoreumBalanceOfVendedor, "BALANCE DEL COMPRADOR:",balanceOfBuyer,"RESULT GET ASSET BALANCE OF COMPRADOR:",resultGetAssetBalanceOfComprador)
         let isRWS = false
-        if(resultGetAssetBalanceOfComprador !== "error" && resultGetAssetBalanceOfComprador !== "notFound" && resultGetAssetBalanceOfComprador>0) isRWS=true
+
+        if(resultGetAssetBalanceOfComprador !== "error" && resultGetAssetBalanceOfComprador !== "notFound" && resultGetAssetBalanceOfComprador !=false) 
+          {
+            let rawValue=resultGetAssetBalanceOfComprador.balance
+            const DECIMAL_FACTOR = Math.pow(10, 8);
+            const realValue = rawValue / DECIMAL_FACTOR;
+            if(realValue>0){
+              isRWS=true
+            }
+         
+          
+          } 
     let balanceAssetEnVenta=balanceOfVendedor.find(e=>e.asset===itemEnVenta.asset)
 
         if(balanceAssetEnVenta==="error")  return await this.handleError(socket, "notSelling", "Seller is not available");
@@ -426,7 +530,7 @@ console.log("pasamos a bloquear:")
                  isActive.push({user:vendedor.vendedorId,reason:"sale",ventaId:data.ventaId,buyer:tokenValido.usuario});
                  await cacheData(`busySales`,isActive,this.redisClient);
                  console.log("BUSY SALES:",isActive)
-                 this.io.sockets.emit("busySeller",{ventaId:data.ventaId,buyer:tokenValido.usuario});
+                 this.io.sockets.emit("busySeller",{ventaId:data.ventaId,buyer:tokenValido.usuario,reason:"sale"});
                 await new Promise(resolve => setTimeout(resolve, 50000));
             }
             try {
@@ -466,14 +570,14 @@ console.log("pasamos a bloquear:")
                   await  this.io.sockets.emit("venta", { ordenId: vendedor.ordenId, balance:  balanceAssetEnVenta.balance-data.cantidad });
                   await this.blockOrUnblockTransactions(await this.gateway, [buyer, vendedor.vendedorId], false);
                     if(!isRWS){
-console.log("enviando dinero a inversores")
+                        console.log("enviando dinero a inversores")
                         await this.raptoreumWorldStockInvestorsMoney(buyer, 0.32, "asset sold");
-console.log("enviando dinero a la caja chica")
-  await (await this.raptoreumCore).withdrawRaptoreum(buyer,"rocJmBwaA4wRP2y3moUWNn1p37eCZK4D9E", 1.99);
+                        console.log("enviando dinero a la caja chica")
+                        await (await this.raptoreumCore).withdrawRaptoreum(buyer,"rocJmBwaA4wRP2y3moUWNn1p37eCZK4D9E", 1.99);
                     }
                 } else if(raptoreumWithdraw && !tokenWithdraw){
                    if(!pending)  socket.emit("errorDeCompra")
-                   if(!pending) this.io.sockets.emit("busySeller",{ventaId:data.ventaId,buyer:tokenValido.usuario});
+                   if(!pending) this.io.sockets.emit("busySeller",{ventaId:data.ventaId,buyer:tokenValido.usuario,reason:"sale"});
   let isActive= await getFromCache(`busySales`,this.redisClient)
                  isActive.push({user:vendedor.vendedorId,reason:"sale",ventaId:data.ventaId,buyer:tokenValido.usuario});
                  await cacheData(`busySales`,isActive,this.redisClient);
@@ -485,7 +589,7 @@ console.log("enviando dinero a la caja chica")
                     await this.intentarRetiradaDeEmergenciaDeRaptoreum(tokenValido,transaccionPendidente,tokenValido.address,vendedor.sellerAddress,vendedor.vendedorId,raptoreumNecesario,itemEnVenta.asset,insertarCompraComprador,insertarVentaVendedor,data.ventaId, balanceAssetEnVenta.balance );
                        return
                   } else if(!raptoreumWithdraw && tokenWithdraw){
-                    if(!pending)this.io.sockets.emit("busySeller",{ventaId:data.ventaId,buyer:tokenValido.usuario});
+                    if(!pending)this.io.sockets.emit("busySeller",{ventaId:data.ventaId,buyer:tokenValido.usuario,reason:"sale"});
                    if(!pending) socket.emit("errorDeCompra")
                   console.log("RAPTOREUM WITHDRAW SALIÓ MAL")
   let isActive= await getFromCache(`busySales`,this.redisClient)
@@ -515,56 +619,311 @@ console.log("enviando dinero a la caja chica")
     }
 });
 
+socket.on('getBusyUser', async (data:any) => {
+ let dataFinal=[]
+ let tokenValido = await decodeToken(data.token);
+ if(tokenValido==="error")return this.handleError(socket, "errorDeCompra", "jwt error");
+ if(tokenValido==="expired")return socket.emit("expired")
+ let busyAssets = await getFromCache('busyAssets', this.redisClient);
+ let busySales = await getFromCache('busySales', this.redisClient);
+ let userid=tokenValido.userid
+ let busySale=busySales.find(i=>i.buyer===userid || i.user===userid)
+ if(busySale){
+  dataFinal.push({reason:"sale"})
+ }
+ let busyAsset=busyAssets.find(i=>i.user===userid)
+ if(busyAsset){
+  dataFinal.push({reason:"assetCreation"})
+ }
+return socket.emit("getBusyUserData",dataFinal)
+})
 
+socket.on('compraDiscord', async (data: { token: string; ventaId: string; cantidad: number;totp:any;userid:string }) => {
+  if (tokenExpresion.test(data.token) && typeof (data.cantidad) == "number" && data.cantidad > 0) {
+      console.log("pasamos la validacion de parametros")
+      let tokenValido = await decodeToken(data.token);
+      if(tokenValido==="error")   return this.handleError(socket, "errorDeCompra", "jwt error");
+      if(tokenValido==="expired")return socket.emit("expired",{comprador:data.userid})
+      if(!tokenValido.address)
+      {
+      let address=await (await this.gateway).getUserAddress(tokenValido.userid)
+      if(address==="error")return socket.emit("errorDeCompra",{comprador:data.userid})
+      if(address==="no address")return socket.emit("errorDeCompra",{comprador:data.userid})
+      tokenValido.address=address
+      }
+
+      let isTotp=await this.isTOTP(tokenValido.userid)
+      if(isTotp==="error")   return this.handleError(socket, "errorDeCompra", "totp error");
+      if(isTotp===true){
+       let resultTOTP=await this.verifyTOTP(tokenValido.userid,data.totp)
+       if(resultTOTP===false)return socket.emit("invalidTOTP",{comprador:data.userid})
+       if(resultTOTP==="error")return socket.emit("errorTOTP",{comprador:data.userid})
+      }
+      let result = await this.getRaptoreumdHealth();
+      if (result == "error" || result == "dead") {
+          return socket.emit('serverDown',{comprador:data.userid})
+      }
+
+      console.log("La cadena es válida");
+      let buyer = tokenValido.userid;
+      let accountBlocked = await (await this.gateway).verifyAccountBlocked(buyer);
+      if (accountBlocked !== "error" && accountBlocked===true) {
+          console.log("cuenta bloqueada del comprador!!")
+          return socket.emit('blockAccount',{comprador:data.userid})
+      }
+    console.log("ID DE LA VENTA:",data.ventaId)
+      let [assetsEnVentaDelVendedor, nftEnVentaDelVendedor] = await Promise.all([
+         await (await this.gateway).getMarketAssetsById(data.ventaId),
+          await(await this.gateway).getMarketNFTsById(data.ventaId)
+      ]);
+console.log("ASSET EN VENTA?:",assetsEnVentaDelVendedor)
+console.log("NFT EN VENTA?:",nftEnVentaDelVendedor)
+      if (assetsEnVentaDelVendedor.length === 0 && nftEnVentaDelVendedor.length === 0) {
+          console.log("no está en venta!!!")
+          return socket.emit('notSelling',{comprador:data.userid})
+      }else if(assetsEnVentaDelVendedor.length > 0 && nftEnVentaDelVendedor.length > 0)   return this.handleError(socket, "notSelling", "2 assets  are being sold");
+let itemType = null;
+let itemEnVenta=null
+  if (assetsEnVentaDelVendedor.length > 0) {
+    itemEnVenta=assetsEnVentaDelVendedor[0]
+    itemType = 'Asset';
+  } else if (nftEnVentaDelVendedor.length >0){
+ itemEnVenta=nftEnVentaDelVendedor[0]
+
+    itemType = 'nft';
+  }
+      console.log("obtendremos al vendedor:",itemEnVenta._id)
+      let vendedor = await (await this.gateway).getVendedorDelToken(itemEnVenta._id,itemType);
+      console.log("VENDEDOR:",vendedor)
+      if (!vendedor) {
+          console.log("NO HAY VENDEDOR:",vendedor)
+          return socket.emit('notSelling',{comprador:data.userid})
+      }
+      console.log("HAY VENDEDOR:")
+      let cuentaBloqueadaVendedor = await (await this.gateway).verifyAccountBlocked(vendedor.vendedorId);
+
+      if (cuentaBloqueadaVendedor!=="error" && cuentaBloqueadaVendedor===true) {
+        return socket.emit('notAvailable',{comprador:data.userid})
+      }
+      else if(cuentaBloqueadaVendedor==="error" ){
+        return socket.emit('notAvailable',{comprador:data.userid})
+
+      }
+      console.log("obteniendo data importante:!!")
+      let [balanceOfVendedor, raptoreumBalanceOfVendedor, balanceOfBuyer,resultGetAssetBalanceOfComprador] = await Promise.all([
+         await (await this.raptoreumCore).getUserAssets(vendedor.sellerAddress),
+         await (await this.raptoreumCore).getAccountBalance(vendedor.vendedorId),
+         await (await this.raptoreumCore).getAccountBalance(buyer),
+         await (await this.raptoreumCore).getAddressBalance(tokenValido.address,"TESTINGCOINTESTINGCOIN"),
+      ]);
+
+      console.log("DATA IMPORTANTE:","BALANCE OF VENDEDOR:",balanceOfVendedor,"raptoreum balance of vendedor:",raptoreumBalanceOfVendedor, "BALANCE DEL COMPRADOR:",balanceOfBuyer,"RESULT GET ASSET BALANCE OF COMPRADOR:",resultGetAssetBalanceOfComprador)
+      let isRWS = false
+      if(resultGetAssetBalanceOfComprador !== "error" && resultGetAssetBalanceOfComprador !== "notFound" && resultGetAssetBalanceOfComprador !=false) 
+        {
+          let rawValue=resultGetAssetBalanceOfComprador.balance
+          const DECIMAL_FACTOR = Math.pow(10, 8);
+          const realValue = rawValue / DECIMAL_FACTOR;
+          if(realValue>0){
+            isRWS=true
+          }
+       
+        
+        } 
+  let balanceAssetEnVenta=balanceOfVendedor.find(e=>e.asset===itemEnVenta.asset)
+
+      if(balanceAssetEnVenta==="error")    return   socket.emit('errorDeCompra',{comprador:data.userid});
+   if(balanceAssetEnVenta==="notFound")  return socket.emit("notSelling",{comprador:data.userid})
+
+
+let raptoreumNecesario=itemEnVenta.price*data.cantidad
+      if(!raptoreumNecesario)    return socket.emit('errorDeCompra',{comprador:data.userid})
+      if ( balanceAssetEnVenta.balance >= data.cantidad ) {
+        console.log("PASAMOS POR QUE EL VENDEDOR TIENE EL BALANCE SUFICIENTE PARA VENDER")
+          if(!isRWS){
+            console.log("NO ES RWS")
+              if (balanceOfBuyer < (raptoreumNecesario + 10)){
+                console.log("NO TIENE PLATA")
+                return   socket.emit('buyerNotEnoughRaptoreum',{comprador:data.userid});
+              }
+          }else if(isRWS){
+              if (balanceOfBuyer < raptoreumNecesario){
+             return   socket.emit('buyerNotEnoughRaptoreum',{comprador:data.userid});
+
+              }
+          }
+
+console.log("pasamos a bloquear:")
+          let blocked =await (await this.gateway).blockOrUnblockUserTransactions(vendedor.vendedorId, "block");
+           let blocked2 =await (await this.gateway).blockOrUnblockUserTransactions(buyer,"block");
+
+          if (!blocked) {
+              console.log("no pudimos bloquear")
+                   console.log("emitiendo couldNotConnect")
+              socket.emit('couldNotConnect',{comprador:data.userid});
+              return
+            }
+  if (!blocked2) {
+              console.log("no pudimos bloquear")
+                   console.log("emitiendo couldNotConnect")
+              socket.emit('couldNotConnect',{comprador:data.userid});
+              return
+            }
+
+let  insertarVentaVendedor = await (await this.gateway).insertCompraOventa(vendedor.vendedorId, "venta", raptoreumNecesario, itemEnVenta.asset, data.cantidad, itemEnVenta.assetpicture,itemType);
+let  insertarCompraComprador = await (await this.gateway).insertCompraOventa(buyer, "compra", raptoreumNecesario, itemEnVenta.asset, data.cantidad, itemEnVenta.assetpicture,itemType);
+               let pending=false
+          console.log("nos saltamos el retiro de raptoreum por que el vendedor tiene mas de 1")
+          let retiroCajaChica = await (await this.raptoreumCore).withdrawRaptoreum("charlieeee", vendedor.sellerAddress, 0.00009);
+          if (!retiroCajaChica) {
+            return socket.emit("errorDeCompra",{comprador:data.userid})
+          }
+          if (raptoreumBalanceOfVendedor < 0.00002) {
+
+               pending=true
+console.log("empujando ID BUSY por que el usuario tiene menos de 0.00002 RTM")
+               socket.emit("compraPendiente");
+               let isActive= await getFromCache(`busySales`,this.redisClient)
+               isActive.push({user:vendedor.vendedorId,reason:"sale",ventaId:data.ventaId,buyer:tokenValido.usuario});
+               await cacheData(`busySales`,isActive,this.redisClient);
+               console.log("BUSY SALES:",isActive)
+               this.io.sockets.emit("busySeller",{ventaId:data.ventaId,buyer:tokenValido.usuario,reason:"sale"});
+              await new Promise(resolve => setTimeout(resolve, 50000));
+          }
+          try {
+              let { raptoreumWithdraw, tokenWithdraw } = await this.handleWithdrawals(buyer, vendedor.sellerAddress, raptoreumNecesario, vendedor.vendedorId, tokenValido.address, data.cantidad, balanceAssetEnVenta.assetid);
+             console.log("RAPTOREUM WITHDRAW:",raptoreumWithdraw)
+             console.log("token WITHDRAW:",tokenWithdraw)
+              if (raptoreumWithdraw && tokenWithdraw) {
+                 try{
+                  if(itemType === "nft"){
+                       let resultDetenerVenta = await (await this.gateway).detenerVenta(vendedor.vendedorId,vendedor.ordenId,"nft")
+                  if (resultDetenerVenta) {
+                      this.io.sockets.emit("ventaDetenida", vendedor.ordenId);
+                  }
+
+                   }
+                   }catch(e){
+                  console.log("ERROR EN DETENER VENTA:",e)
+                 }
+                console.log("AMBAS TRANSACCIONES SALIERON BIEN")
+                  let [updateBuyer, updateSeller] = await Promise.all([
+                 await (await this.gateway).updateCompraOventa(insertarCompraComprador, "SUCCESS", tokenWithdraw),
+                 await (await this.gateway).updateCompraOventa(insertarVentaVendedor, "SUCCESS", raptoreumWithdraw)
+                  ]);
+                if(pending===false){
+                await socket.emit("compraExitosa",{comprador:data.userid});
+                }
+                if(pending===true){
+                       //enviar el id de la venta y removerlo del market assets en el front
+                let isActive= await getFromCache(`busySales`,this.redisClient)
+                const index = isActive.findIndex((i: any) => i.ventaId === data.ventaId);
+                if (index !== -1) {
+                  isActive.splice(index, 1); // Elimina el objeto encontrado
+                  await cacheData(`busySales`,isActive,this.redisClient); // Guarda el array actualizado en Redis
+                }
+                }
+                await this.io.sockets.emit("notBusySeller",{ventaId:data.ventaId,buyer:tokenValido.usuario,actualBalance:balanceAssetEnVenta.balance-data.cantidad});
+                await  this.io.sockets.emit("venta", { ordenId: vendedor.ordenId, balance:  balanceAssetEnVenta.balance-data.cantidad });
+                await this.blockOrUnblockTransactions(await this.gateway, [buyer, vendedor.vendedorId], false);
+                  if(!isRWS){
+console.log("enviando dinero a inversores")
+                      await this.raptoreumWorldStockInvestorsMoney(buyer, 0.32, "asset sold");
+console.log("enviando dinero a la caja chica")
+await (await this.raptoreumCore).withdrawRaptoreum(buyer,"rocJmBwaA4wRP2y3moUWNn1p37eCZK4D9E", 1.99);
+                  }
+              } else if(raptoreumWithdraw && !tokenWithdraw){
+                 if(!pending)  socket.emit("errorDeCompra",{comprador:data.userid})
+                 if(!pending) this.io.sockets.emit("busySeller",{ventaId:data.ventaId,buyer:tokenValido.usuario,reason:"sale"});
+let isActive= await getFromCache(`busySales`,this.redisClient)
+               isActive.push({user:vendedor.vendedorId,reason:"sale",ventaId:data.ventaId,buyer:tokenValido.usuario});
+               await cacheData(`busySales`,isActive,this.redisClient);
+ console.log("TOKEN WITHDRAW SALIÓ MAL")
+                  let transaccionPendidente = await (await this.gateway).transaccionPendiente(vendedor.vendedorId,vendedor.sellerAddress,buyer,  tokenValido.address,"raptoreum",raptoreumNecesario);
+                  let retirarDeRaptoreumWorld = await (await this.raptoreumCore).withdrawRaptoreum("raptoverdad", tokenValido.address, 0.00009);
+                  let resultunBlockcomprador = await (await this.gateway).blockOrUnblockUserTransactions(buyer, "unblock");
+                  await new Promise(resolve => setTimeout(resolve, 60000));
+                  await this.intentarRetiradaDeEmergenciaDeRaptoreum(tokenValido,transaccionPendidente,tokenValido.address,vendedor.sellerAddress,vendedor.vendedorId,raptoreumNecesario,itemEnVenta.asset,insertarCompraComprador,insertarVentaVendedor,data.ventaId, balanceAssetEnVenta.balance );
+                     return
+                } else if(!raptoreumWithdraw && tokenWithdraw){
+                  if(!pending)this.io.sockets.emit("busySeller",{ventaId:data.ventaId,buyer:tokenValido.usuario,reason:"sale"});
+                 if(!pending) socket.emit("errorDeCompra",{comprador:data.userid})
+                console.log("RAPTOREUM WITHDRAW SALIÓ MAL")
+let isActive= await getFromCache(`busySales`,this.redisClient)
+               isActive.push({user:vendedor.vendedorId,reason:"sale",ventaId:data.ventaId,buyer:tokenValido.usuario});
+await      cacheData(`busySales`,isActive,this.redisClient);
+   let transaccionPendidente = await (await this.gateway).transaccionPendiente(buyer, tokenValido.address, vendedor.sellerAddress, vendedor.vendedorId, itemEnVenta.asset, data.cantidad);
+                  let retirarDeRaptoreumWorld = await (await this.raptoreumCore).withdrawRaptoreum("raptoverdad",tokenValido.address, 0.00009);
+                  let resultunBlockvendedor = await (await this.gateway).blockOrUnblockUserTransactions(vendedor.vendedorId, "unblock");
+                  await new Promise(resolve => setTimeout(resolve, 60000));
+                 await this.intentarRetiradaDeEmergenciaDeToken(tokenValido,transaccionPendidente,tokenValido.address,vendedor.sellerAddress,vendedor.vendedorId,data.cantidad,balanceAssetEnVenta.assetid,insertarCompraComprador,insertarVentaVendedor,data.ventaId, balanceAssetEnVenta.balance );
+                 return
+                }else if(!raptoreumWithdraw && !tokenWithdraw){
+                  if(pending)return socket.emit("errorDeCompra",{comprador:data.userid})
+               await (await this.gateway).blockOrUnblockUserTransactions(vendedor.vendedorId, "unblock");
+               await (await this.gateway).blockOrUnblockUserTransactions(vendedor.vendedorId, "unblock");
+                }
+          } catch (error) {
+               console.log("ERROR DE COMPRA:",error)
+              return socket.emit("errorDeCompra",{comprador:data.userid})
+          }
+      } else if (balanceOfVendedor < data.cantidad) {
+         console.log("EMITIENDO SELLERNOTENOIGHTOKENS")
+          return socket.emit("sellerNotEnoughTokens",{comprador:data.userid})
+      }
+  }else{
+      console.log("error con la data")
+  }
+});
  })
 
 }
 public async checkBusySellers() {
   try {
     let busyAssets = await getFromCache('busyAssets', this.redisClient);
-   console.log("busyAssets conseguido en checkBusySellers: ",busyAssets)
+    console.log("busyAssets conseguido en checkBusySellers: ", busyAssets);
     let busySales = await getFromCache('busySales', this.redisClient);
-    // Asegurarte de que todas las promesas se resuelvan correctamente
-    for (const ia of busyAssets){
+
+    // Verifica si las ventas en busySales no están en busyAssets
+    for (let i = busySales.length - 1; i >= 0; i--) {
+  let sale = busySales[i];
+  let found = busyAssets.find(asset => asset.user === sale.user);
+  if (sale.reason === 'assetCreation' && !found) {
+    console.log('No se encuentra busy:', sale.user);
+    await this.io.sockets.emit("notBusySeller", { ventaId: sale.ventaId, buyer: sale.user, actualBalance: "+1" });
+    busySales.splice(i, 1); // Eliminar el elemento de busySales
+  }
+}
+
+    // Procesa cada usuario en busyAssets
+    for (const ia of busyAssets) {
       let userSales = await (await this.gateway).getSales(ia.user);
       if (userSales) {
-      console.log("sales of the user:",userSales)
+        console.log("Sales of the user:", userSales);
         const promises = userSales.map(async (ib) => {
-let found= busyAssets.find(item=> item.user===ib.vendedorId)
-if(found){
-            let isInSales=busySales.find(item=> item.ventaId===ib.ordenId)
-            if(!isInSales){
-            console.log("el elemento no está en los busysales")
-            await new Promise((resolve) => {
-              busySales.push({ user: ib.vendedorId, reason: "assetCreation", ventaId: ib.ordenId, buyer: found.username });
-              this.io.sockets.emit('busySeller', { ventaId: ib.ordenId, buyer: found.username }, resolve);
-            });
-            }else{
-  console.log("el elemento está en los busysales")
+          let found = busyAssets.find(item => item.user === ib.vendedorId);
+          if (found) {
+            let isInSales = busySales.find(item => item.ventaId === ib.ordenId);
+            if (!isInSales) {
+              console.log("El elemento no está en los busySales");
               await new Promise((resolve) => {
-              this.io.sockets.emit('busySeller', { ventaId: ib.ordenId, buyer: found.username }, resolve);
-            });
-
+                busySales.push({ user: ib.vendedorId, reason: "assetCreation", ventaId: ib.ordenId, buyer: found.username });
+                this.io.sockets.emit('busySeller', { ventaId: ib.ordenId, buyer: found.username,reason:"assetCreation" }, resolve);
+              });
+            } else {
+              console.log("El elemento está en los busySales");
+              await new Promise((resolve) => {
+                this.io.sockets.emit('busySeller', { ventaId: ib.ordenId, buyer: found.username,reason:"assetCreation" }, resolve);
+              });
+            }
           }
-}else{
-  //user not found in busy asset. proceeding to remove user from sales if needed.
-  let isInArray=busySales.find(i=> i.user === ib.vendedorId && i.reason==="assetCreation")
-  if(isInArray)
-  {
-    busySales.filter(item => item.user !== ib.vendedorId && item.reason !== "assetCreation");
-    await this.io.sockets.emit("notBusySeller",{ventaId:ib.ordenId,buyer:found.username,actualBalance:"+1"});
-
-  }
-
-
-}
         });
         await Promise.all(promises);
       }
     }
-    await cacheData("busySales",busySales, this.redisClient)
+    await cacheData("busySales", busySales, this.redisClient);
   } catch (e) {
-    console.log("error en check busy sellers: ", e);
+    console.log("Error en check busy sellers: ", e);
   }
 }
 public startChecking() {
@@ -754,23 +1113,27 @@ private async getRaptoreumdHealth(){
      return "error"
     }
  }
+
   public async assetToMarket(asset: string, token: string, price: number,totp:any): Promise<any> {
     return new Promise(async (resolve, reject) => {
       try {
         console.log("primer paso");
         const usuariodecodificado = await decodeToken(token);
-        if (usuariodecodificado != "error" && usuariodecodificado != "expired") {
- let isTotp=await this.isTOTP(usuariodecodificado.userid)
+     if (usuariodecodificado != "error" && usuariodecodificado != "expired") {
+        let isTotp=await this.isTOTP(usuariodecodificado.userid)
         if(isTotp==="error")return reject("errorTOTP")
         if(isTotp===true){
          let resultTOTP=await this.verifyTOTP(usuariodecodificado.userid,totp)
          if(resultTOTP===false)return reject( "invalidTOTP")
            if(resultTOTP==="error")return reject("errorTOTP")
-
         }
-
+      if(!usuariodecodificado.address){
+        let address=await (await this.gateway).getUserAddress(usuariodecodificado.userid)
+        if(address==="error")   reject("error");
+        if(address==="no address")   reject("error");
+          usuariodecodificado.address=address
+      }
    let cuentaBloqueadaVendedor = await (await this.gateway).verifyAccountBlocked(usuariodecodificado.userid);
-
         if (cuentaBloqueadaVendedor!=="error" && cuentaBloqueadaVendedor===true) {
             console.log("cuenta bloqueada del vendedor!!")
             reject("blockedAccount");
@@ -778,7 +1141,6 @@ private async getRaptoreumdHealth(){
         else if(cuentaBloqueadaVendedor==="error" ){
           reject("error");
         }
-
           let foundAsset=await (await this.raptoreumCore).getAddressBalance(usuariodecodificado.address,asset)
           if(foundAsset === "notFound")reject("assetNotFoundInWallet");
           if(foundAsset === "error")reject("assetNotFoundInWallet");
@@ -821,6 +1183,7 @@ private async getRaptoreumdHealth(){
       }
     });
   }
+
  public async handleWithdrawals( buyer:any, sellerAddress:any, raptoreumAmount:any, sellerId:any, tokenAddress:any, tokenAmount:any, asset:any) {
 console.log("ASSET A RETIRTAR:",asset)
 console.log("ASSET A RETIRTAR:",asset)
@@ -830,11 +1193,13 @@ console.log("ASSET A RETIRTAR:",asset)
 console.log("ASSET A RETIRTAR:",asset)
 console.log("ASSET A RETIRTAR:",asset)
 
-    let raptoreumWithdraw =false
-//await (await this.raptoreumCore).withdrawRaptoreum(buyer, sellerAddress, raptoreumAmount);
+    let raptoreumWithdraw =await (await this.raptoreumCore).withdrawRaptoreum(buyer, sellerAddress, raptoreumAmount);
+console.log("HANDLE WITHDRAW RAPTOREUM WITHDRAW",raptoreumWithdraw)
       console.log("enviados ",raptoreumAmount," a ",sellerAddress)
  let tokenWithdraw = await  (await this.raptoreumCore).withdrawToken(sellerId, tokenAddress, tokenAmount, asset,sellerAddress,sellerAddress);
-    return { raptoreumWithdraw, tokenWithdraw };
+   console.log("HANDLE WITHDRAW TOKEN WITHDRAW",raptoreumWithdraw)
+
+ return { raptoreumWithdraw, tokenWithdraw };
 }
  private async intentarRetiradaDeEmergenciaDeRaptoreum (
     comprador: any,
@@ -954,3 +1319,4 @@ console.log("ACTUALIZANDO DATA. TOKEN ENVIADO")
     setTimeout(intentar, 40000);
   }
 }
+

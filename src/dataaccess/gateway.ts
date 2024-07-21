@@ -48,7 +48,7 @@ private client:any
     this.client = redis.createClient({
   host: 'localhost', // Cambia a la dirección IP del host si no estás usando localhost
   port: 6380,        // Cambia al puerto al que has mapeado el contenedor de Redis (6380 en este eje                                                         mplo)
-  // password: 'tu-contraseña', // Si has configurado una contraseña para Redis, descomenta y config                                                         ura esta línea
+   password:process.env.GOOGLEPASS, // Si has configurado una contraseña para Redis, descomenta y config                                                         ura esta línea
 legacyMode: true
 
 });
@@ -530,24 +530,20 @@ console.log("body enviado:",body)
       return resolve([])
      }
    })}
-        public async getUserAddress(user:string): Promise<string>
+   public async getUserAddress(user:string): Promise<string>
     {
       try {
         const getAddressQuery="SELECT address FROM users WHERE userId=? "
-
         if (!this.pool) {
           throw new Error('No se pudo conectar a la base de datos');
         }else{
-  
           let [result] = await this.pool.execute<RowDataPacket[]>(getAddressQuery,[user]);
-  
           if(Array.isArray(result))
           {
-            if(result.length == 0 || result==undefined)
+           
+            if(result)
             {
-              return " await (await this.gateway).verifyAccountBlocked(buyer);"
-            }else if(result.length > 0)
-            {
+              console.log("RESULT OBTENIDO EN GETUSERADDRESS: ",result)
               return result[0].address
             }else{
               return "error"
@@ -561,7 +557,6 @@ console.log("body enviado:",body)
         console.log("error get user address:",error)
         return "error"
       }
-     
     }
     public async insertData(sentence: string, values: any[]): Promise<boolean> {
       let success = false;

@@ -340,7 +340,7 @@ const rpcHost = `http://localhost:10225/wallet/${usuario}`;
 
         if (response) {
           console.log("response true account balance!")
-          console.log(response)
+      
           const accountBalance = parseFloat(response.data.result);
           resolve(accountBalance) ;
         } else {
@@ -382,7 +382,7 @@ public async listCoinholders(coin:string):Promise<any>{
 console.log("listcoinholders es 200")
         if(response.data)
         {
-          console.log("DATA LIST COIN HOLDERS:", response.data.result);
+     
           let data = response.data.result || false;
           if (!data || Object.keys(data).length === 0) return false;
 
@@ -444,11 +444,9 @@ console.log(error)
         );
 
         if (response && response.data.result) {
-
-          console.log("response create wallet:",response.data.result)
           return response.data.result;
         } else {
-          console.log("ELSE create wallet:",response)
+     
           return false;
         }
       } catch (error:any) {
@@ -485,8 +483,9 @@ const rpcHost = `http://localhost:10225/wallet/${billeteraDelToken}`;
     );
 
     if (response && response.status==200) {
-      console.log(response)
-    return true
+     
+
+    return response.data.result.txid
 
     }
   } catch (error:any) {

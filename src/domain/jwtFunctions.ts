@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 
 export async function decodeToken(token: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    jwt.verify(token, "LongLiveSkrillexBnx6aw300172_", (err: any, decoded: any) => {
+    jwt.verify(token, process.env.USERSSECRET, (err: any, decoded: any) => {
       if (err) {
         console.log("token error:", err);
         if (err.message === "jwt expired") {

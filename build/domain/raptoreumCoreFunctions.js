@@ -179,11 +179,11 @@ var raptoreumCoreAccess = /** @class */ (function () {
     };
     raptoreumCoreAccess.prototype.getAddressBalance = function (address, asset) {
         return __awaiter(this, void 0, void 0, function () {
-            var rpcUser, rpcPassword, rpcHost, requestData, response, assetData, DECIMAL_FACTOR, rawValue, realValue, error_2;
+            var rpcUser, rpcPassword, rpcHost, requestData, response, assetData, cachedAssetDetails, DECIMAL_FACTOR, rawValue, realValue, isNft, result, assetToCache, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
+                        _a.trys.push([0, 15, , 16]);
                         rpcUser = 'rodrigo';
                         rpcPassword = '1234';
                         rpcHost = "http://localhost:10225/wallet/";
@@ -206,58 +206,96 @@ var raptoreumCoreAccess = /** @class */ (function () {
                     case 1:
                         response = _a.sent();
                         console.log('Received response from RPC server');
-                        if (response) {
-                            console.log("Response status: ".concat(response.status));
-                            if (response.status === 200) {
-                                console.log('Response status is 200');
-                                if (response.data && response.data.result) {
-                                    console.log('Response data and result exist');
-                                    assetData = response.data.result[asset];
-                                    if (assetData) {
-                                        console.log("Balance for asset ".concat(asset, ": ").concat(assetData.balance));
-                                        DECIMAL_FACTOR = Math.pow(10, 8);
-                                        rawValue = assetData.balance;
-                                        realValue = rawValue / DECIMAL_FACTOR;
-                                        assetData.balance = realValue;
-                                        return [2 /*return*/, assetData];
-                                    }
-                                    else {
-                                        console.log('Asset data not found');
-                                        return [2 /*return*/, "notFound"];
-                                    }
-                                }
-                                else {
-                                    console.log('Response data or result does not exist');
-                                    return [2 /*return*/, "notFound"];
-                                }
-                            }
-                            else if (response.status === 500) {
-                                console.log('Response status is 500');
-                                return [2 /*return*/, "notFound"];
-                            }
-                            else {
-                                console.log('Response status is neither 200 nor 500');
-                                return [2 /*return*/, "error"];
-                            }
+                        if (!response) return [3 /*break*/, 13];
+                        console.log("Response status: ".concat(response.status));
+                        if (!(response.status === 200)) return [3 /*break*/, 11];
+                        console.log('Response status is 200');
+                        if (!(response.data && response.data.result)) return [3 /*break*/, 9];
+                        console.log('Response data and result exist');
+                        assetData = response.data.result[asset];
+                        if (!assetData) return [3 /*break*/, 7];
+                        return [4 /*yield*/, getFromCache("assetDetails:".concat(asset), this.client)];
+                    case 2:
+                        cachedAssetDetails = _a.sent();
+                        console.log("Balance for asset ".concat(asset, ": ").concat(assetData.balance));
+                        DECIMAL_FACTOR = Math.pow(10, 8);
+                        rawValue = assetData.balance;
+                        realValue = rawValue / DECIMAL_FACTOR;
+                        if (!cachedAssetDetails) return [3 /*break*/, 3];
+                        return [2 /*return*/, {
+                                asset: asset,
+                                balance: realValue,
+                                _id: false,
+                                enVenta: false,
+                                type: cachedAssetDetails.Isunique ? 'NFT' : 'TOKEN',
+                                assetpicture: 'none',
+                                acronimo: '',
+                                assetid: cachedAssetDetails.Asset_id,
+                            }];
+                    case 3: return [4 /*yield*/, this.getassetdetailsbyname(asset)];
+                    case 4:
+                        isNft = _a.sent();
+                        if (isNft === 'getassetdetailsbynameError') {
+                            return [2 /*return*/, 'error'];
                         }
-                        else {
-                            console.log('Response is empty');
+                        else if (isNft === 'notFound') {
                             return [2 /*return*/, "error"];
                         }
-                        return [3 /*break*/, 3];
-                    case 2:
+                        result = {
+                            asset: asset,
+                            balance: realValue,
+                            _id: false,
+                            enVenta: false,
+                            type: isNft.Isunique ? 'NFT' : 'TOKEN',
+                            assetpicture: 'none',
+                            acronimo: '',
+                            assetid: isNft.Asset_id,
+                        };
+                        assetToCache = {
+                            Isunique: isNft.Isunique,
+                            Asset_id: isNft.Asset_id,
+                        };
+                        return [4 /*yield*/, cacheData("assetDetails:".concat(asset), assetToCache, this.client)];
+                    case 5:
+                        _a.sent();
+                        return [2 /*return*/, result];
+                    case 6: return [3 /*break*/, 8];
+                    case 7:
+                        console.log('Asset data not found');
+                        return [2 /*return*/, 'notFound'];
+                    case 8: return [3 /*break*/, 10];
+                    case 9:
+                        console.log('Response data or result does not exist');
+                        return [2 /*return*/, 'notFound'];
+                    case 10: return [3 /*break*/, 12];
+                    case 11:
+                        if (response.status === 500) {
+                            console.log('Response status is 500');
+                            return [2 /*return*/, 'notFound'];
+                        }
+                        else {
+                            console.log('Response status is neither 200 nor 500');
+                            return [2 /*return*/, 'error'];
+                        }
+                        _a.label = 12;
+                    case 12: return [3 /*break*/, 14];
+                    case 13:
+                        console.log('Response is empty');
+                        return [2 /*return*/, 'error'];
+                    case 14: return [3 /*break*/, 16];
+                    case 15:
                         error_2 = _a.sent();
                         console.log('Caught an error');
                         if (error_2.response && error_2.response.status === 500) {
                             console.log('Error status is 500');
-                            return [2 /*return*/, "notFound"];
+                            return [2 /*return*/, 'notFound'];
                         }
                         else {
                             console.log('Error status is not 500 or error response does not exist');
-                            return [2 /*return*/, "error"];
+                            return [2 /*return*/, 'error'];
                         }
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
+                        return [3 /*break*/, 16];
+                    case 16: return [2 /*return*/];
                 }
             });
         });
@@ -395,7 +433,6 @@ var raptoreumCoreAccess = /** @class */ (function () {
                                     response = _a.sent();
                                     if (response) {
                                         console.log("response true account balance!");
-                                        console.log(response);
                                         accountBalance = parseFloat(response.data.result);
                                         resolve(accountBalance);
                                     }
@@ -430,7 +467,7 @@ var raptoreumCoreAccess = /** @class */ (function () {
                         requestData = {
                             jsonrpc: '1.0',
                             id: 'curltest',
-                            method: 'listassetbalancesbyaddress',
+                            method: 'listaddressesbyasset',
                             params: [coin],
                         };
                         return [4 /*yield*/, axios_1.default.post(rpcHost, requestData, {
@@ -446,11 +483,11 @@ var raptoreumCoreAccess = /** @class */ (function () {
                         response = _a.sent();
                         if (!response) return [3 /*break*/, 6];
                         if (!(response.status == 200)) return [3 /*break*/, 4];
+                        console.log("listcoinholders es 200");
                         if (!response.data) return [3 /*break*/, 3];
-                        console.log("DATA LIST COIN HOLDERS:", response.data);
                         data_2 = response.data.result || false;
                         if (!data_2 || Object.keys(data_2).length === 0)
-                            return [2 /*return*/, "listCoinHoldersError"];
+                            return [2 /*return*/, false];
                         DECIMAL_FACTOR_2 = Math.pow(10, 8);
                         return [4 /*yield*/, Promise.all(Object.keys(data_2).map(function (key) { return __awaiter(_this, void 0, void 0, function () {
                                 var rawValue, realValue;
@@ -459,12 +496,13 @@ var raptoreumCoreAccess = /** @class */ (function () {
                                     realValue = rawValue / DECIMAL_FACTOR_2;
                                     return [2 /*return*/, {
                                             address: key,
-                                            amount: realValue
+                                            balance: realValue
                                         }];
                                 });
                             }); }))];
                     case 2:
                         result = _a.sent();
+                        console.log("RESULTADO FINAL RAPTOREUMCORE LISTCOINHOLDERS:", result);
                         return [2 /*return*/, result];
                     case 3: return [3 /*break*/, 5];
                     case 4:
@@ -477,6 +515,7 @@ var raptoreumCoreAccess = /** @class */ (function () {
                     case 7: return [3 /*break*/, 9];
                     case 8:
                         error_5 = _a.sent();
+                        console.log(error_5);
                         return [2 /*return*/, "listCoinHoldersError"];
                     case 9: return [2 /*return*/];
                 }
@@ -511,11 +550,9 @@ var raptoreumCoreAccess = /** @class */ (function () {
                     case 1:
                         response = _a.sent();
                         if (response && response.data.result) {
-                            console.log("response create wallet:", response.data.result);
                             return [2 /*return*/, response.data.result];
                         }
                         else {
-                            console.log("ELSE create wallet:", response);
                             return [2 /*return*/, false];
                         }
                         return [3 /*break*/, 3];
@@ -556,8 +593,7 @@ var raptoreumCoreAccess = /** @class */ (function () {
                     case 1:
                         response = _a.sent();
                         if (response && response.status == 200) {
-                            console.log(response);
-                            return [2 /*return*/, true];
+                            return [2 /*return*/, response.data.result.txid];
                         }
                         return [3 /*break*/, 3];
                     case 2:
