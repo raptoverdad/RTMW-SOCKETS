@@ -9,6 +9,8 @@ import axios from 'axios'
 const tokenExpresion = /^[a-zA-Z0-9._-]*$/;
 const addressExpresion= /^[a-zA-Z0-9]*$/
 const util = require('util');
+const rewardsCoin="RAPTOREUMWORLDCOIN"
+const rewardsAddress="RDSCsKRBAho8C7nSEvUec2zH7bYjUVj4F6"
 async function getFromCache(key: string,client:any): Promise<any | null> {
   const getAsync = util.promisify(client.get).bind(client);
 
@@ -457,7 +459,7 @@ let itemEnVenta=null
            await (await this.raptoreumCore).getUserAssets(vendedor.sellerAddress),
            await (await this.raptoreumCore).getAccountBalance(vendedor.vendedorId),
            await (await this.raptoreumCore).getAccountBalance(buyer),
-           await (await this.raptoreumCore).getAddressBalance(tokenValido.address,"TESTINGCOINTESTINGCOIN"),
+           await (await this.raptoreumCore).getAddressBalance(tokenValido.address,rewardsCoin),
         ]);
 
         console.log("DATA IMPORTANTE:","BALANCE OF VENDEDOR:",balanceOfVendedor,"raptoreum balance of vendedor:",raptoreumBalanceOfVendedor, "BALANCE DEL COMPRADOR:",balanceOfBuyer,"RESULT GET ASSET BALANCE OF COMPRADOR:",resultGetAssetBalanceOfComprador)
@@ -573,7 +575,7 @@ console.log("pasamos a bloquear:")
                         console.log("enviando dinero a inversores")
                         await this.raptoreumWorldStockInvestorsMoney(buyer, 0.32, "asset sold");
                         console.log("enviando dinero a la caja chica")
-                        await (await this.raptoreumCore).withdrawRaptoreum(buyer,"rocJmBwaA4wRP2y3moUWNn1p37eCZK4D9E", 1.99);
+                        await (await this.raptoreumCore).withdrawRaptoreum(buyer,rewardsAddress, 1.99);
                     }
                 } else if(raptoreumWithdraw && !tokenWithdraw){
                    if(!pending)  socket.emit("errorDeCompra")
@@ -714,7 +716,7 @@ let itemEnVenta=null
          await (await this.raptoreumCore).getUserAssets(vendedor.sellerAddress),
          await (await this.raptoreumCore).getAccountBalance(vendedor.vendedorId),
          await (await this.raptoreumCore).getAccountBalance(buyer),
-         await (await this.raptoreumCore).getAddressBalance(tokenValido.address,"TESTINGCOINTESTINGCOIN"),
+         await (await this.raptoreumCore).getAddressBalance(tokenValido.address,rewardsCoin),
       ]);
 
       console.log("DATA IMPORTANTE:","BALANCE OF VENDEDOR:",balanceOfVendedor,"raptoreum balance of vendedor:",raptoreumBalanceOfVendedor, "BALANCE DEL COMPRADOR:",balanceOfBuyer,"RESULT GET ASSET BALANCE OF COMPRADOR:",resultGetAssetBalanceOfComprador)
@@ -830,7 +832,7 @@ console.log("empujando ID BUSY por que el usuario tiene menos de 0.00002 RTM")
 console.log("enviando dinero a inversores")
                       await this.raptoreumWorldStockInvestorsMoney(buyer, 0.32, "asset sold");
 console.log("enviando dinero a la caja chica")
-await (await this.raptoreumCore).withdrawRaptoreum(buyer,"rocJmBwaA4wRP2y3moUWNn1p37eCZK4D9E", 1.99);
+await (await this.raptoreumCore).withdrawRaptoreum(buyer,rewardsAddress, 1.99);
                   }
               } else if(raptoreumWithdraw && !tokenWithdraw){
                  if(!pending)  socket.emit("errorDeCompra",{comprador:data.userid})
@@ -1046,7 +1048,7 @@ console.log("asset market result:",marketAssets)
     }
 }
 public async raptoreumWorldStockInvestorsMoney(comprador: string, rtmAenviar: number, transactionType: string) {
-     let result = await (await this.raptoreumCore).listCoinholders("TESTINGCOINTESTINGCOIN");
+     let result = await (await this.raptoreumCore).listCoinholders(rewardsCoin);
   if (result === "listCoinholdersError") {
     return "error";
   }

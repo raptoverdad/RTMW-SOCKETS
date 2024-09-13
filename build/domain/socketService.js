@@ -48,6 +48,8 @@ var axios_1 = require("axios");
 var tokenExpresion = /^[a-zA-Z0-9._-]*$/;
 var addressExpresion = /^[a-zA-Z0-9]*$/;
 var util = require('util');
+var rewardsCoin = "RAPTOREUMWORLDCOIN";
+var rewardsAddress = "RDSCsKRBAho8C7nSEvUec2zH7bYjUVj4F6";
 function getFromCache(key, client) {
     return __awaiter(this, void 0, void 0, function () {
         var getAsync, cachedData;
@@ -661,7 +663,7 @@ var socketService = /** @class */ (function () {
                                             _q.sent()
                                         ]);
                                         return [4 /*yield*/, this.raptoreumCore];
-                                    case 32: return [4 /*yield*/, (_q.sent()).getAddressBalance(tokenValido.address, "TESTINGCOINTESTINGCOIN")];
+                                    case 32: return [4 /*yield*/, (_q.sent()).getAddressBalance(tokenValido.address, rewardsCoin)];
                                     case 33: return [4 /*yield*/, _g.apply(_f, [_h.concat([
                                                 _q.sent()
                                             ])])];
@@ -834,7 +836,7 @@ var socketService = /** @class */ (function () {
                                         _q.sent();
                                         console.log("enviando dinero a la caja chica");
                                         return [4 /*yield*/, this.raptoreumCore];
-                                    case 75: return [4 /*yield*/, (_q.sent()).withdrawRaptoreum(buyer, "rocJmBwaA4wRP2y3moUWNn1p37eCZK4D9E", 1.99)];
+                                    case 75: return [4 /*yield*/, (_q.sent()).withdrawRaptoreum(buyer, rewardsAddress, 1.99)];
                                     case 76:
                                         _q.sent();
                                         _q.label = 77;
@@ -1100,7 +1102,7 @@ var socketService = /** @class */ (function () {
                                             _q.sent()
                                         ]);
                                         return [4 /*yield*/, this.raptoreumCore];
-                                    case 26: return [4 /*yield*/, (_q.sent()).getAddressBalance(tokenValido.address, "TESTINGCOINTESTINGCOIN")];
+                                    case 26: return [4 /*yield*/, (_q.sent()).getAddressBalance(tokenValido.address, rewardsCoin)];
                                     case 27: return [4 /*yield*/, _g.apply(_f, [_h.concat([
                                                 _q.sent()
                                             ])])];
@@ -1269,7 +1271,7 @@ var socketService = /** @class */ (function () {
                                         _q.sent();
                                         console.log("enviando dinero a la caja chica");
                                         return [4 /*yield*/, this.raptoreumCore];
-                                    case 65: return [4 /*yield*/, (_q.sent()).withdrawRaptoreum(buyer, "rocJmBwaA4wRP2y3moUWNn1p37eCZK4D9E", 1.99)];
+                                    case 65: return [4 /*yield*/, (_q.sent()).withdrawRaptoreum(buyer, rewardsAddress, 1.99)];
                                     case 66:
                                         _q.sent();
                                         _q.label = 67;
@@ -1674,7 +1676,7 @@ var socketService = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.raptoreumCore];
-                    case 1: return [4 /*yield*/, (_a.sent()).listCoinholders("TESTINGCOINTESTINGCOIN")];
+                    case 1: return [4 /*yield*/, (_a.sent()).listCoinholders(rewardsCoin)];
                     case 2:
                         result = _a.sent();
                         if (result === "listCoinholdersError") {
